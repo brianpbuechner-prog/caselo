@@ -1,11 +1,13 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 import type { Thresholds } from '../../config/rules'
 import { analyze } from '../../lib/compare/analyze'
 import type { Snapshot } from '../../lib/model'
-import { getRole, ROLES, type ViewId } from '../../lib/roles/roles'
-import { ByGrade, ChangeView, MissingNotice, SummaryTiles } from './Overview'
-import { DEFAULT_FILTER, StudentList, type ListFilter } from './StudentList'
+import { getRole, ROLES, type TabId } from '../../lib/roles/roles'
+import { CaseloadTab, MissingLine } from './Overview'
+import { DEFAULT_FILTER, StudentsTab, type ListFilter } from './StudentList'
 import { ThresholdPanel } from './ThresholdPanel'
+
+const TAB_LABELS: Record<TabId, string> = { students: 'Students', caseload: 'Caseload' }
 
 export function ResultsView({
   snapshots,
@@ -33,6 +35,8 @@ export function ResultsView({
   onAbout: () => void
 }) {
   const results = useMemo(() => analyze(snapshots, thresholds), [snapshots, thresholds])
+  const tabs = getRole(role).tabs
+  const [tab, setTab] = useState<TabId>(tabs[0])
   const [filter, setFilter] = useState<ListFilter>(DEFAULT_FILTER)
   const [panel, setPanel] = useState(false)
   const onFilter = (f: Partial<ListFilter>) => setFilter((cur) => ({ ...cur, ...f }))
@@ -45,16 +49,7 @@ export function ResultsView({
   const hasCourseGrades = snapshots.some((s) => s.categories.includes('courseGrades'))
 
   const labels = results.labels
-  const context =
-    labels.length > 1 ? `Showing ${labels.at(-1)}, compared with ${labels.slice(0, -1).join(', ')}` : `Showing ${labels[0]}`
-
-  const views: Record<ViewId, ReactNode> = {
-    missing: <MissingNotice results={results} snapshots={snapshots} warnings={warnings} thresholds={thresholds} />,
-    summary: <SummaryTiles results={results} />,
-    change: <ChangeView results={results} filter={filter} onFilter={onFilter} />,
-    byGrade: <ByGrade results={results} />,
-    students: <StudentList results={results} filter={filter} onFilter={onFilter} compact={compact} onCompact={onCompact} />,
-  }
+  const context = labels.length > 1 ? `${labels.at(-1)}, compared with ${labels.at(-2)}` : labels[0]
 
   return (
     <>
@@ -65,32 +60,52 @@ export function ResultsView({
           </button>
           <span className="context">{context}</span>
           <div className="actions">
-            <label className="visually-hidden" htmlFor="role">
-              Role
-            </label>
-            <select id="role" value={role} onChange={(e) => onRole(e.target.value)} disabled={ROLES.length === 1} title="Role">
-              {ROLES.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-            <button className="btn sm" onClick={() => setPanel(true)}>
-              Rules and thresholds
+            {ROLES.length > 1 && (
+              <select aria-label="Role" value={role} onChange={(e) => onRole(e.target.value)}>
+                {ROLES.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            )}
+            <button className="btn ghost sm" onClick={() => setPanel(true)}>
+              Rules
             </button>
-            <button className="btn sm" onClick={onFiles}>
+            <button className="btn ghost sm" onClick={onFiles}>
               Files
             </button>
-            <button className="btn sm" onClick={onClear}>
+            <button className="btn ghost sm" onClick={onClear}>
               Clear data
             </button>
           </div>
         </div>
       </header>
       <main className="page">
-        {getRole(role).views.map((v) => (
-          <div key={v}>{views[v]}</div>
-        ))}
+        <MissingLine results={results} warnings={warnings} />
+        <div className="tabs" role="tablist" aria-label="Results">
+          {tabs.map((t) => (
+            <button key={t} role="tab" aria-selected={tab === t} className={`tab${tab === t ? ' on' : ''}`} onClick={() => setTab(t)}>
+              {TAB_LABELS[t]}
+            </button>
+          ))}
+        </div>
+        <div role="tabpanel" aria-label={TAB_LABELS[tab]}>
+          {tab === 'students' ? (
+            <StudentsTab results={results} filter={filter} onFilter={onFilter} compact={compact} />
+          ) : (
+            <CaseloadTab
+              results={results}
+              snapshots={snapshots}
+              thresholds={thresholds}
+              onShowStudents={(f) => {
+                setFilter({ ...DEFAULT_FILTER, ...f })
+                setTab('students')
+                window.scrollTo(0, 0)
+              }}
+            />
+          )}
+        </div>
       </main>
       {panel && (
         <ThresholdPanel
@@ -99,6 +114,8 @@ export function ResultsView({
           onClose={() => setPanel(false)}
           attendanceCodes={attendanceCodes}
           hasCourseGrades={hasCourseGrades}
+          compact={compact}
+          onCompact={onCompact}
         />
       )}
     </>

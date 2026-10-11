@@ -1,20 +1,20 @@
-// Roles decide which result views appear and in what order. Only the
+// Roles decide which result tabs appear and in what order. Only the
 // counselor role exists for now. To add a role, add an entry here and,
-// if needed, a new view component in components/results.
+// if needed, a new tab component in components/results.
 
-export type ViewId = 'missing' | 'summary' | 'change' | 'byGrade' | 'students'
+export type TabId = 'students' | 'caseload'
 
 export interface Role {
   id: string
   label: string
-  views: ViewId[]
+  tabs: TabId[]
 }
 
 export const ROLES: Role[] = [
   {
     id: 'counselor',
     label: 'Counselor',
-    views: ['missing', 'summary', 'change', 'byGrade', 'students'],
+    tabs: ['students', 'caseload'],
   },
 ]
 

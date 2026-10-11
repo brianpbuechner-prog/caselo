@@ -77,11 +77,11 @@ export function FileReview({
                     {f.headers.length} columns, {delimiterLabel(f.delimiter).toLowerCase()} delimited
                   </span>
                   <span style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-                    <button className="btn ghost sm" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up">
-                      Up
+                    <button className="btn ghost sm" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up" title="Move up">
+                      ↑
                     </button>
-                    <button className="btn ghost sm" onClick={() => move(i, 1)} disabled={i === files.length - 1} aria-label="Move down">
-                      Down
+                    <button className="btn ghost sm" onClick={() => move(i, 1)} disabled={i === files.length - 1} aria-label="Move down" title="Move down">
+                      ↓
                     </button>
                     <button className="btn ghost sm" onClick={() => onChange(files.filter((x) => x.id !== f.id))}>
                       Remove
@@ -116,7 +116,7 @@ export function FileReview({
                   <div className="field">
                     Data found
                     <div className="chips" style={{ minHeight: 36, alignItems: 'center' }}>
-                      {cats.length ? cats.map((c) => <span key={c} className="tag accent">{CATEGORY_LABELS[c]}</span>) : <span className="tag">None yet</span>}
+                      {cats.length ? cats.map((c) => <span key={c} className="tag">{CATEGORY_LABELS[c]}</span>) : <span className="tag">None yet</span>}
                     </div>
                   </div>
                   <button className="btn sm" style={{ marginLeft: 'auto', alignSelf: 'end' }} onClick={() => setOpen(isOpen ? null : f.id)} aria-expanded={isOpen}>

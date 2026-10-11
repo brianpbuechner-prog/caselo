@@ -49,6 +49,6 @@ export function ruleDescriptions(t: Thresholds): Record<'attendance' | 'academic
     attendance: `Chronic absence: missed ${t.chronicAbsencePct}% or more of scheduled days.`,
     academics: `Academics: ${t.gpaSource === 'unweighted' ? 'unweighted' : 'cumulative'} GPA below ${t.gpaBelow.toFixed(2)}, or ${t.failingGradesAtLeast} or more failing course ${t.failingGradesAtLeast === 1 ? 'grade' : 'grades'} when course grades are in the file.`,
     behavior: `Behavior: ${t.behaviorIncidentsAtLeast} or more incidents.`,
-    tiers: `Tier 1: fewer than ${t.tier2MinFlags} ${t.tier2MinFlags === 1 ? 'flag' : 'flags'}. Tier 2: ${t.tier2MinFlags} or more. Tier 3: ${t.tier3MinFlags} or more.`,
+    tiers: `Tier 1: ${t.tier2MinFlags === 1 ? 'no flags' : `fewer than ${t.tier2MinFlags} flags`}. Tier 2: ${t.tier2MinFlags} or more ${t.tier2MinFlags === 1 ? 'flag' : 'flags'}. Tier 3: ${t.tier3MinFlags} or more.`,
   }
 }

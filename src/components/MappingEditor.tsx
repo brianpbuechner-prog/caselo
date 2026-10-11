@@ -8,7 +8,7 @@ import { CATEGORY_LABELS, type Category, type SisCatalog } from '../lib/sis/type
 
 const METHOD_TEXT: Record<MatchMethod, string> = {
   default: 'Default name',
-  fuzzy: 'Close match',
+  fuzzy: 'Close match, check',
   manual: 'Set by you',
   none: 'Not found',
 }
@@ -39,7 +39,14 @@ export function MappingEditor({
   const jsonInput = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState<string | null>(null)
   const ex = examples(file)
-  const categories = Object.keys(CATEGORY_LABELS) as Category[]
+  const [showAll, setShowAll] = useState(false)
+  const allCategories = Object.keys(CATEGORY_LABELS) as Category[]
+  // Only show categories with at least one matched column, plus identity.
+  const found = allCategories.filter(
+    (c) => c === 'identity' || catalog.fields.some((f) => f.category === c && file.mapping[f.key]?.index != null),
+  )
+  const hidden = allCategories.length - found.length
+  const categories = showAll ? allCategories : found
 
   function setField(key: string, value: string) {
     const index = value === '' ? null : Number(value)
@@ -117,6 +124,11 @@ export function MappingEditor({
           </tbody>
         </table>
       </div>
+      {hidden > 0 && (
+        <button className="link" style={{ marginTop: 8 }} onClick={() => setShowAll((v) => !v)}>
+          {showAll ? 'Hide categories not in this file' : `Show ${hidden} more ${hidden === 1 ? 'category' : 'categories'} not found in this file`}
+        </button>
+      )}
     </div>
   )
 
@@ -134,7 +146,7 @@ export function MappingEditor({
               <td>
                 {f.label}{' '}
                 {f.unverified && (
-                  <span className="tag warn" title="This default column name has not been checked against a real export.">
+                  <span className="tag look" title="This default column name has not been checked against a real export.">
                     Name unverified
                   </span>
                 )}
@@ -156,7 +168,7 @@ export function MappingEditor({
               </td>
               <td className="small muted">{m.index == null ? '' : ex[m.index]}</td>
               <td>
-                <span className={`tag${m.method === 'default' || m.method === 'manual' ? ' accent' : m.method === 'fuzzy' ? ' warn' : ''}`}>
+                <span className={`tag${m.method === 'fuzzy' ? ' look' : ''}`}>
                   {METHOD_TEXT[m.method]}
                 </span>
               </td>

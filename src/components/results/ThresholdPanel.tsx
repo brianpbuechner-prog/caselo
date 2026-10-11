@@ -45,6 +45,8 @@ export function ThresholdPanel({
   onClose,
   attendanceCodes,
   hasCourseGrades,
+  compact,
+  onCompact,
 }: {
   thresholds: Thresholds
   onChange: (t: Thresholds) => void
@@ -52,14 +54,16 @@ export function ThresholdPanel({
   /** Attendance detail codes found in the files, if any. */
   attendanceCodes: string[]
   hasCourseGrades: boolean
+  compact: boolean
+  onCompact: (v: boolean) => void
 }) {
   const t = thresholds
   const set = (patch: Partial<Thresholds>) => onChange({ ...t, ...patch })
   const rules = ruleDescriptions(t)
   return (
-    <Modal kind="drawer" onClose={onClose} title="Rules and thresholds">
+    <Modal kind="drawer" onClose={onClose} title="Rules">
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <h2>Rules and thresholds</h2>
+        <h2>Rules</h2>
         <button className="btn ghost sm" style={{ marginLeft: 'auto' }} onClick={onClose}>
           Close
         </button>
@@ -135,6 +139,14 @@ export function ThresholdPanel({
         <p className="rule-text">{rules.tiers} A student gets at most one flag per category.</p>
         <NumberSetting label="Tier 2 at" value={t.tier2MinFlags} step={1} min={1} max={3} suffix="flags or more" onChange={(n) => set({ tier2MinFlags: n, tier3MinFlags: Math.max(n, t.tier3MinFlags) })} />
         <NumberSetting label="Tier 3 at" value={t.tier3MinFlags} step={1} min={1} max={3} suffix="flags or more" onChange={(n) => set({ tier3MinFlags: n, tier2MinFlags: Math.min(n, t.tier2MinFlags) })} />
+      </fieldset>
+
+      <fieldset>
+        <legend>Display</legend>
+        <label className="setting">
+          <span>Compact student list</span>
+          <input type="checkbox" checked={compact} onChange={(e) => onCompact(e.target.checked)} />
+        </label>
       </fieldset>
 
       <div>

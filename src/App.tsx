@@ -105,7 +105,7 @@ export default function App() {
       {stage === 'review' && (
         <>
           <header className="topbar">
-            <div className="topbar-inner">
+            <div className="topbar-inner" style={{ maxWidth: 900 }}>
               <button className="brand" onClick={() => setAbout(true)} title="About Caselo">
                 Caselo
               </button>

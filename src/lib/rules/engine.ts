@@ -44,7 +44,11 @@ export interface Evaluation {
   gpa: number | null
   failingCourses: CourseMark[]
   incidents: number | null
+  /** The values that caused a flag, each with a plain-language reason that names the rule. */
+  marks: Partial<Record<MarkedValue, string>>
 }
+
+export type MarkedValue = 'absence' | 'gpa' | 'failing' | 'incidents'
 
 /** Which rule categories can run, given the categories found in the files. */
 export function availableRules(categories: Category[]): Record<RuleCategory, boolean> {
@@ -89,6 +93,7 @@ export function tierFor(flagCount: number, t: Thresholds): Tier {
 export function evaluate(row: StudentRow, categories: Category[], t: Thresholds): Evaluation {
   const rules = availableRules(categories)
   const flags: Flag[] = []
+  const marks: Evaluation['marks'] = {}
 
   // Attendance
   let absencePct: number | null = null
@@ -111,14 +116,12 @@ export function evaluate(row: StudentRow, categories: Category[], t: Thresholds)
     if (absencePct != null && absencePct >= t.chronicAbsencePct) {
       const detail =
         attendanceMethod === 'district'
-          ? "district's calculation"
+          ? "the district's own calculation"
           : attendanceMethod === 'days'
             ? `${row.daysAbsent} of ${row.scheduledDays} days`
             : `${absenceCount} absences of ${row.scheduledDays} days`
-      flags.push({
-        category: 'attendance',
-        reason: `Absent ${fmtPct(absencePct)} of scheduled days (${detail}); threshold ${t.chronicAbsencePct}%`,
-      })
+      marks.absence = `Absent ${fmtPct(absencePct)} of scheduled days (${detail}). Rule: ${t.chronicAbsencePct}% or more.`
+      flags.push({ category: 'attendance', reason: marks.absence })
     }
   }
 
@@ -131,19 +134,19 @@ export function evaluate(row: StudentRow, categories: Category[], t: Thresholds)
     const usedFirst = first != null
     gpa = first ?? second
     failingCourses = row.courses.filter((c) => isFailing(c.grade, t))
-    const reasons: string[] = []
     if (gpa != null && gpa < t.gpaBelow) {
       const which =
         (usedFirst ? t.gpaSource : t.gpaSource === 'unweighted' ? 'cumulative' : 'unweighted') === 'unweighted'
           ? 'Unweighted GPA'
           : 'Cumulative GPA'
-      reasons.push(`${which} ${gpa.toFixed(2)}, below ${t.gpaBelow.toFixed(2)}`)
+      marks.gpa = `${which} ${gpa.toFixed(2)}. Rule: below ${t.gpaBelow.toFixed(2)}.`
     }
     if (categories.includes('courseGrades') && failingCourses.length >= t.failingGradesAtLeast) {
       const names = failingCourses.map((c) => c.course ?? 'course').join(', ')
-      reasons.push(`${failingCourses.length} failing ${failingCourses.length === 1 ? 'grade' : 'grades'} (${names})`)
+      marks.failing = `${failingCourses.length} failing ${failingCourses.length === 1 ? 'grade' : 'grades'}: ${names}. Rule: ${t.failingGradesAtLeast} or more.`
     }
-    if (reasons.length) flags.push({ category: 'academics', reason: reasons.join('; ') })
+    const reasons = [marks.gpa, marks.failing].filter(Boolean)
+    if (reasons.length) flags.push({ category: 'academics', reason: reasons.join(' ') })
   }
 
   // Behavior
@@ -151,10 +154,8 @@ export function evaluate(row: StudentRow, categories: Category[], t: Thresholds)
   if (rules.behavior) {
     incidents = row.incidents ?? 0
     if (incidents >= t.behaviorIncidentsAtLeast) {
-      flags.push({
-        category: 'behavior',
-        reason: `${incidents} behavior ${incidents === 1 ? 'incident' : 'incidents'}; threshold ${t.behaviorIncidentsAtLeast}`,
-      })
+      marks.incidents = `${incidents} behavior ${incidents === 1 ? 'incident' : 'incidents'}. Rule: ${t.behaviorIncidentsAtLeast} or more.`
+      flags.push({ category: 'behavior', reason: marks.incidents })
     }
   }
 
@@ -168,5 +169,6 @@ export function evaluate(row: StudentRow, categories: Category[], t: Thresholds)
     gpa,
     failingCourses,
     incidents,
+    marks,
   }
 }

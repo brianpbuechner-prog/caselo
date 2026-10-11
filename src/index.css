@@ -37,7 +37,7 @@
 body { margin: 0; background: var(--bg); }
 h1, h2, h3, p { margin: 0; }
 button, input, select { font: inherit; color: inherit; }
-a { color: var(--accent); }
+a { color: var(--text); text-underline-offset: 3px; }
 .num { font-variant-numeric: tabular-nums; }
 .muted { color: var(--muted); }
 .small { font-size: 13px; }
@@ -53,11 +53,11 @@ a { color: var(--accent); }
 }
 .btn:hover { background: var(--subtle); }
 .btn:focus-visible, .chip:focus-visible, input:focus-visible, select:focus-visible, .link:focus-visible, th button:focus-visible {
-  outline: 2px solid var(--accent); outline-offset: 2px;
+  outline: 2px solid var(--text); outline-offset: 2px;
 }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn.primary:hover { background: var(--accent-strong); }
-.btn.primary:disabled { background: #9fb9b7; border-color: #9fb9b7; cursor: not-allowed; }
+.btn.primary { background: var(--text); border-color: var(--text); color: #fff; }
+.btn.primary:hover { background: #33383f; }
+.btn.primary:disabled { background: #b8bcc2; border-color: #b8bcc2; cursor: not-allowed; }
 .btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
 .btn.ghost:hover { background: var(--subtle); color: var(--text); }
 .btn.sm { height: 30px; padding: 0 10px; font-size: 13px; }
@@ -79,19 +79,19 @@ input[type='number'] { width: 90px; }
   flex: 1; width: 100%; max-width: 620px; display: flex; flex-direction: column;
   justify-content: center; align-items: center; gap: 22px; padding: 48px 0 24px;
 }
-.wordmark { font-size: 44px; font-weight: 650; letter-spacing: -0.03em; color: var(--accent); }
+.wordmark { font-size: 44px; font-weight: 650; letter-spacing: -0.03em; color: var(--text); }
 .tagline { color: var(--muted); text-align: center; max-width: 460px; }
 .dropzone {
-  width: 100%; border: 1.5px dashed var(--accent-line); border-radius: 16px; background: var(--surface);
+  width: 100%; border: 1.5px dashed var(--border); border-radius: 16px; background: var(--surface);
   box-shadow: var(--shadow); padding: 34px 20px; text-align: center; cursor: pointer;
   transition: border-color 0.12s, background 0.12s;
 }
-.dropzone:hover, .dropzone.over { border-color: var(--accent); background: var(--accent-soft); }
-.dropzone:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.dropzone:hover, .dropzone.over { border-color: var(--faint); background: var(--subtle); }
+.dropzone:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
 .dropzone strong { display: block; font-weight: 600; font-size: 16px; margin-bottom: 4px; }
 .dropzone.compact { padding: 18px; box-shadow: none; }
 .privacy { display: flex; gap: 10px; align-items: flex-start; color: var(--muted); font-size: 14px; max-width: 520px; }
-.privacy svg { flex: none; margin-top: 2px; color: var(--accent); }
+.privacy svg { flex: none; margin-top: 2px; color: var(--muted); }
 .error { color: var(--danger); font-size: 14px; }
 
 /* Footer */
@@ -108,7 +108,7 @@ input[type='number'] { width: 90px; }
   border-bottom: 1px solid var(--border);
 }
 .topbar-inner { max-width: 1180px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.topbar .brand { font-weight: 650; font-size: 18px; color: var(--accent); letter-spacing: -0.02em; background: none; border: 0; cursor: pointer; padding: 0; }
+.topbar .brand { font-weight: 650; font-size: 18px; color: var(--text); letter-spacing: -0.02em; background: none; border: 0; cursor: pointer; padding: 0; }
 .topbar .context { color: var(--muted); font-size: 13.5px; }
 .topbar .actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 
@@ -119,7 +119,6 @@ input[type='number'] { width: 90px; }
 .card.pad { padding: 16px 18px; }
 
 .notice { border-radius: var(--radius); padding: 12px 14px; background: var(--subtle); font-size: 14px; display: grid; gap: 4px; }
-.notice.accent { background: var(--accent-soft); }
 .notice strong { font-weight: 600; }
 
 /* Stat tiles */
@@ -151,8 +150,7 @@ tbody tr:hover td { background: #fafbfb; }
 .tier-2 { background: var(--accent-soft); color: var(--accent-strong); border: 1px solid var(--accent-line); }
 .tier-1 { background: var(--subtle); color: var(--muted); }
 .tag { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--subtle); color: var(--muted); white-space: nowrap; }
-.tag.accent { background: var(--accent-soft); color: var(--accent-strong); }
-.tag.warn { background: #fbefe9; color: #8a3a1c; }
+.tag.look { background: var(--accent-soft); color: var(--accent-strong); }
 
 /* Filters */
 .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px; border-bottom: 1px solid var(--border); }
@@ -160,8 +158,10 @@ tbody tr:hover td { background: #fafbfb; }
 .filters .count { margin-left: auto; font-size: 13px; color: var(--muted); }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; }
-.chip:hover { border-color: var(--accent-line); }
-.chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-strong); }
+.chip:hover { border-color: var(--faint); }
+.chip.on { background: var(--subtle); border-color: var(--text); }
+.chip.static { cursor: default; }
+.chip.static:hover { border-color: var(--border); }
 .chip b { font-weight: 600; }
 
 /* File review */
@@ -198,7 +198,7 @@ tbody tr:hover td { background: #fafbfb; }
 .dialog ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 
 .loading { display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: 14px; }
-.spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--accent-line); border-top-color: var(--accent); animation: spin 0.8s linear infinite; }
+.spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--text); animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 640px) {
@@ -208,3 +208,70 @@ tbody tr:hover td { background: #fafbfb; }
 }
 
 .topbar select { height: 30px; font-size: 13px; }
+
+/* ---- Results, design pass ----
+   The accent color means one thing: needs attention.
+   Tier 3, Tier 2, marked values, and "Look here" use it. Nothing else does. */
+.missing { display: grid; gap: 2px; padding: 10px 0 0; color: var(--muted); }
+.tabs { display: flex; gap: 4px; margin: 14px 0 12px; border-bottom: 1px solid var(--border); }
+.tab { background: none; border: 0; padding: 10px 14px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab:hover { color: var(--text); }
+.tab.on { color: var(--text); border-bottom-color: var(--text); }
+.tab:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+.glance { display: grid; grid-template-columns: minmax(200px, 300px) 1fr; gap: 28px; align-items: center; padding: 16px 20px; margin-bottom: 12px; }
+.glance-win { display: flex; align-items: center; gap: 12px; }
+.glance-win > span:last-child { display: grid; font-size: 14px; line-height: 1.35; }
+.big { font-size: 34px; font-weight: 650; letter-spacing: -0.03em; line-height: 1; }
+
+.tierbar { display: grid; gap: 8px; }
+.tierbar-track { display: flex; gap: 2px; height: 14px; }
+.tierbar-track .seg { border-radius: 4px; min-width: 6px; cursor: pointer; transition: opacity 0.12s; }
+.tierbar-track .seg.dim { opacity: 0.3; }
+.seg-3 { background: var(--accent); }
+.seg-2 { background: #8cc4bf; }
+.seg-1 { background: #e3e6e9; }
+.tierbar-legend { display: flex; flex-wrap: wrap; gap: 6px; }
+.legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; }
+.legend-item:hover { border-color: var(--faint); }
+.legend-item.on { border-color: var(--text); background: var(--subtle); }
+.legend-item.static { cursor: default; border-color: transparent; padding-left: 0; }
+.legend-item b { font-weight: 600; }
+.swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+.list .filters { border-bottom: 1px solid var(--border); }
+.list-foot { padding: 10px 12px; border-top: 1px solid var(--border); }
+tr.calm td { color: var(--muted); }
+tr.calm .student-name { color: var(--text); font-weight: 400; }
+.mark-wrap { position: relative; display: inline-block; }
+.mark {
+  background: var(--accent-soft); border: 0; border-radius: 6px; padding: 1px 7px; margin-right: -7px;
+  font: inherit; font-weight: 650; color: var(--accent-strong); cursor: pointer; font-variant-numeric: tabular-nums;
+}
+.mark:hover { background: #d5ebe9; }
+.mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.pop {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 4; width: 260px; text-align: left;
+  background: var(--text); color: #fff; font-size: 13px; font-weight: 400; line-height: 1.4;
+  padding: 9px 11px; border-radius: 8px; box-shadow: var(--shadow-lg); white-space: normal;
+}
+
+.h2 { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+.glance-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 8px; }
+.glance-card { display: grid; gap: 4px; align-content: start; padding: 16px 18px; text-align: left; font: inherit; color: inherit; }
+button.glance-card { cursor: pointer; }
+button.glance-card:hover { border-color: var(--faint); }
+.glance-card .kicker { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.glance-card.look .kicker { color: var(--accent-strong); }
+.glance-card .text { font-size: 14px; color: var(--muted); }
+.glance-card .go { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; margin-top: 4px; }
+button.tile { display: grid; gap: 2px; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+button.tile:hover { border-color: var(--faint); }
+.snapshots { display: grid; gap: 16px; }
+.snapshot-row { display: grid; grid-template-columns: 160px 1fr; gap: 16px; align-items: center; }
+.footnote { margin-top: 18px; max-width: 80ch; }
+
+@media (max-width: 720px) {
+  .glance { grid-template-columns: 1fr; gap: 14px; }
+  .snapshot-row { grid-template-columns: 1fr; gap: 6px; }
+}

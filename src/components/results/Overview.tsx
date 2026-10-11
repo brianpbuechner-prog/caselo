@@ -1,304 +1,249 @@
-// Caseload-level views: missing data notice, summary tiles, change between
-// snapshots, and counts by grade.
+// The Caseload tab: wins first, then what to look at, then the numbers
+// by flag type, by snapshot, and by grade.
 
 import type { ReactNode } from 'react'
 import { ruleDescriptions, type Thresholds } from '../../config/rules'
-import type { Results, Transitions } from '../../lib/compare/analyze'
+import type { Results } from '../../lib/compare/analyze'
 import type { Snapshot } from '../../lib/model'
 import { RULE_CATEGORIES, RULE_LABELS, type RuleCategory } from '../../lib/rules/engine'
 import type { ListFilter } from './StudentList'
+import { TierBar } from './TierBar'
 
-const pct = (n: number, d: number) => (d === 0 ? '0%' : `${Math.round((n / d) * 1000) / 10}%`)
+const pct = (n: number, d: number) => (d === 0 ? '0%' : `${Math.round((n / d) * 100)}%`)
 const signed = (n: number) => (n > 0 ? `+${n}` : String(n))
+const flagName = (c: RuleCategory) => (c === 'attendance' ? 'chronically absent' : `flagged for ${RULE_LABELS[c].toLowerCase()}`)
 
-const MISSING_TEXT: Record<RuleCategory, string> = {
-  attendance: 'Attendance (absence percentage, days absent and scheduled days, or attendance detail)',
-  academics: 'Academics (GPA or course grades)',
-  behavior: 'Behavior (incident records)',
+interface GlanceItem {
+  kind: 'win' | 'look'
+  value: string
+  text: string
+  apply?: Partial<ListFilter>
 }
 
-export function MissingNotice({
+function glanceItems(results: Results): GlanceItem[] {
+  const n = results.summaries.length
+  const latest = results.summaries[n - 1]
+  const items: GlanceItem[] = []
+  const noFlags = results.students.filter((s) => s.latest.flags.length === 0).length
+  items.push({ kind: 'win', value: pct(noFlags, latest.students), text: `of students have no flags (${noFlags} of ${latest.students})`, apply: { flag: 'none' } })
+
+  const tr = results.transitions
+  if (tr) {
+    const best = [...tr.comparable].sort((a, b) => tr.noLongerFlagged[b] - tr.noLongerFlagged[a])[0]
+    if (best && tr.noLongerFlagged[best] > 0) {
+      items.push({ kind: 'win', value: String(tr.noLongerFlagged[best]), text: `no longer ${flagName(best)} since ${tr.from}` })
+    } else if (tr.tierDown > 0) {
+      items.push({ kind: 'win', value: String(tr.tierDown), text: `moved down a tier since ${tr.from}`, apply: { change: 'down' } })
+    }
+    const worst = [...tr.comparable].sort((a, b) => tr.newlyFlagged[b] - tr.newlyFlagged[a])[0]
+    if (worst && tr.newlyFlagged[worst] > 0) {
+      items.push({ kind: 'look', value: String(tr.newlyFlagged[worst]), text: `newly ${flagName(worst)} since ${tr.from}`, apply: { newly: worst } })
+    }
+  }
+
+  if (items.length < 3) {
+    const grades = results.byGrade.filter((g) => g.students >= 10)
+    const top = [...grades].sort((a, b) => b.tiers[3] / b.students - a.tiers[3] / a.students)[0]
+    if (top && top.tiers[3] > 0) {
+      items.push({ kind: 'look', value: pct(top.tiers[3], top.students), text: `of grade ${top.grade} is in Tier 3, the highest of any grade`, apply: { grade: top.grade, tier: '3' } })
+    }
+  }
+  if (items.length < 3) {
+    const common = RULE_CATEGORIES.filter((c) => latest.rules[c]).sort((a, b) => latest.flagged[b] - latest.flagged[a])[0]
+    if (common && latest.flagged[common] > 0) {
+      items.push({ kind: 'look', value: String(latest.flagged[common]), text: `students have a ${RULE_LABELS[common].toLowerCase()} flag, the most common`, apply: { flag: common } })
+    }
+  }
+  return items.slice(0, 3)
+}
+
+export function CaseloadTab({
   results,
   snapshots,
-  warnings,
   thresholds,
+  onShowStudents,
 }: {
   results: Results
   snapshots: Snapshot[]
-  warnings: string[]
   thresholds: Thresholds
+  onShowStudents: (f: Partial<ListFilter>) => void
 }) {
-  const latest = results.summaries[results.summaries.length - 1]
-  const earlierGaps = results.summaries
-    .slice(0, -1)
-    .map((s) => ({ label: s.label, missing: RULE_CATEGORIES.filter((c) => !s.rules[c] && latest.rules[c]) }))
-    .filter((g) => g.missing.length)
-  const usesDistrictPct = snapshots[snapshots.length - 1].files.some((f) => f.categories.includes('attendanceSummary'))
-  const rules = ruleDescriptions(thresholds)
-  return (
-    <div className="section" style={{ display: 'grid', gap: 10 }}>
-      {results.missingRules.length > 0 && (
-        <div className="notice">
-          <strong>Not in your files for {latest.label}</strong>
-          <span>
-            {results.missingRules.map((c) => MISSING_TEXT[c]).join('. ')}. Rules for{' '}
-            {results.missingRules.length === 1 ? 'this category were' : 'these categories were'} not run, and no
-            student is flagged for {results.missingRules.length === 1 ? 'it' : 'them'}.
-          </span>
-        </div>
-      )}
-      {earlierGaps.map((g) => (
-        <div className="notice" key={g.label}>
-          <span>
-            {g.label} has no {g.missing.map((c) => RULE_LABELS[c].toLowerCase()).join(' or ')} data, so change in{' '}
-            {g.missing.length === 1 ? 'that category' : 'those categories'} is not compared.
-          </span>
-        </div>
-      ))}
-      {latest.rules.attendance && usesDistrictPct && (
-        <div className="notice accent">
-          <span>
-            {rules.attendance} Absence percentages come from Infinite Campus
-            (attChronicAbsenteeism.absenteeismPercentage) and reflect your district's own attendance calculation
-            method.
-          </span>
-        </div>
-      )}
-      {warnings.map((w) => (
-        <div className="notice" key={w}>
-          <span>{w}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-export function SummaryTiles({ results }: { results: Results }) {
   const n = results.summaries.length
   const latest = results.summaries[n - 1]
   const prev = n > 1 ? results.summaries[n - 2] : null
-  const change = (a: number, b: number | undefined) =>
-    prev && b !== undefined ? <div className="sub num">{signed(a - b)} since {prev.label}</div> : null
-  // Tier counts are only comparable when both snapshots had the same kinds of data.
-  const sameRules = prev ? RULE_CATEGORIES.every((c) => prev.rules[c] === latest.rules[c]) : false
-  const tierChange = (a: number, b: number | undefined) => (sameRules ? change(a, b) : null)
+  const usesDistrictPct = snapshots[n - 1].files.some((f) => f.categories.includes('attendanceSummary'))
 
-  const tiles = [
-    { label: 'Students', value: latest.students, sub: change(latest.students, prev?.students) },
-    {
-      label: 'Tier 3',
-      value: latest.tiers[3],
-      sub: (
-        <>
-          <div className="sub num">{pct(latest.tiers[3], latest.students)} of students</div>
-          {tierChange(latest.tiers[3], prev?.tiers[3])}
-        </>
-      ),
-    },
-    {
-      label: 'Tier 2',
-      value: latest.tiers[2],
-      sub: (
-        <>
-          <div className="sub num">{pct(latest.tiers[2], latest.students)} of students</div>
-          {tierChange(latest.tiers[2], prev?.tiers[2])}
-        </>
-      ),
-    },
-  ]
-  return (
-    <div className="section">
-      <div className="section-head">
-        <h2>{latest.label}</h2>
-        <span className="small muted">Caseload summary</span>
-      </div>
-      <div className="tiles">
-        {tiles.map((t) => (
-          <div key={t.label} className="card tile">
-            <div className="label">{t.label}</div>
-            <div className="value num">{t.value}</div>
-            {t.sub}
-          </div>
-        ))}
-        {RULE_CATEGORIES.map((c) =>
-          latest.rules[c] ? (
-            <div key={c} className="card tile">
-              <div className="label">{RULE_LABELS[c]} flags</div>
-              <div className="value num">{latest.flagged[c]}</div>
-              <div className="sub num">{pct(latest.flagged[c], latest.students)} of students</div>
-              {prev?.rules[c] ? change(latest.flagged[c], prev.flagged[c]) : null}
-            </div>
-          ) : (
-            <div key={c} className="card tile na">
-              <div className="label">{RULE_LABELS[c]} flags</div>
-              <div className="value">Not in files</div>
-            </div>
-          ),
-        )}
-      </div>
-    </div>
-  )
-}
-
-export function ChangeView({
-  results,
-  filter,
-  onFilter,
-}: {
-  results: Results
-  filter: ListFilter
-  onFilter: (f: Partial<ListFilter>) => void
-}) {
-  const tr = results.transitions
-  if (!tr) return null
-  const chip = (on: boolean, label: ReactNode, apply: Partial<ListFilter>) => (
-    <button
-      className={`chip${on ? ' on' : ''}`}
-      onClick={() => onFilter(on ? { change: 'all', newly: null } : { change: 'all', newly: null, ...apply })}
-      aria-pressed={on}
-    >
-      {label}
-    </button>
-  )
-  return (
-    <div className="section">
-      <div className="section-head">
-        <h2>
-          Change from {tr.from} to {tr.to}
-        </h2>
-        <span className="small muted">
-          {tr.comparable.length < RULE_CATEGORIES.filter((c) => results.summaries.at(-1)!.rules[c]).length
-            ? `Tier changes count only ${tr.comparable.map((c) => RULE_LABELS[c].toLowerCase()).join(' and ')}, the categories in both snapshots. `
-            : ''}
-          Select a count to filter the student list.
-        </span>
-      </div>
-      <div className="card pad" style={{ display: 'grid', gap: 14 }}>
-        <div className="chips">
-          {chip(filter.change === 'up', <><b className="num">{tr.tierUp}</b> moved up a tier</>, { change: 'up' })}
-          {chip(filter.change === 'down', <><b className="num">{tr.tierDown}</b> moved down a tier</>, { change: 'down' })}
-          {tr.comparable.map((c) => (
-            <NewlyChips key={c} c={c} tr={tr} filter={filter} chip={chip} />
-          ))}
-          {chip(filter.change === 'new', <><b className="num">{tr.onlyInLatest}</b> new in {tr.to}</>, { change: 'new' })}
-          <span className="chip" style={{ cursor: 'default' }}>
-            <b className="num">{tr.onlyInPrevious}</b> in {tr.from} but not {tr.to}
-          </span>
-        </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Snapshot</th>
-                <th className="r">Students</th>
-                <th className="r">Tier 3</th>
-                <th className="r">Tier 2</th>
-                {RULE_CATEGORIES.map((c) => (
-                  <th key={c} className="r">
-                    {RULE_LABELS[c]}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {results.summaries.map((s) => (
-                <tr key={s.label}>
-                  <td>{s.label}</td>
-                  <td className="r num">{s.students}</td>
-                  <td className="r num">
-                    {s.tiers[3]} <span className="muted">({pct(s.tiers[3], s.students)})</span>
-                  </td>
-                  <td className="r num">
-                    {s.tiers[2]} <span className="muted">({pct(s.tiers[2], s.students)})</span>
-                  </td>
-                  {RULE_CATEGORIES.map((c) => (
-                    <td key={c} className="r num">
-                      {s.rules[c] ? (
-                        <>
-                          {s.flagged[c]} <span className="muted">({pct(s.flagged[c], s.students)})</span>
-                        </>
-                      ) : (
-                        <span className="muted">Not in files</span>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function NewlyChips({
-  c,
-  tr,
-  filter,
-  chip,
-}: {
-  c: RuleCategory
-  tr: Transitions
-  filter: ListFilter
-  chip: (on: boolean, label: ReactNode, apply: Partial<ListFilter>) => ReactNode
-}) {
-  const name = c === 'attendance' ? 'chronically absent' : `flagged for ${RULE_LABELS[c].toLowerCase()}`
   return (
     <>
-      {chip(filter.newly === c, <><b className="num">{tr.newlyFlagged[c]}</b> newly {name}</>, { newly: c })}
-      <span className="chip" style={{ cursor: 'default' }}>
-        <b className="num">{tr.noLongerFlagged[c]}</b> no longer {name}
-      </span>
+      <section className="glance-cards" aria-label="At a glance">
+        {glanceItems(results).map((g) => (
+          <Card key={g.text} item={g} onShowStudents={onShowStudents} />
+        ))}
+      </section>
+
+      <section className="section">
+        <h2 className="h2">Flags by type</h2>
+        <div className="tiles">
+          {RULE_CATEGORIES.map((c) =>
+            latest.rules[c] ? (
+              <button key={c} className="card tile" onClick={() => onShowStudents({ flag: c })}>
+                <span className="label">{RULE_LABELS[c]}</span>
+                <span className="value num">{latest.flagged[c]}</span>
+                <span className="sub num">
+                  {pct(latest.flagged[c], latest.students)} of students
+                  {prev?.rules[c] ? `, ${signed(latest.flagged[c] - prev.flagged[c])} since ${prev.label}` : ''}
+                </span>
+              </button>
+            ) : (
+              <div key={c} className="card tile na">
+                <span className="label">{RULE_LABELS[c]}</span>
+                <span className="value">Not in your files</span>
+              </div>
+            ),
+          )}
+        </div>
+      </section>
+
+      {n > 1 && (
+        <section className="section">
+          <h2 className="h2">Tiers by snapshot</h2>
+          <div className="card pad snapshots">
+            {results.summaries.map((s) => {
+              const missing = RULE_CATEGORIES.filter((c) => latest.rules[c] && !s.rules[c])
+              return (
+                <div key={s.label} className="snapshot-row">
+                  <div>
+                    <b>{s.label}</b>
+                    <div className="small muted num">{s.students} students</div>
+                    {missing.length > 0 && <div className="small muted">No {missing.map((c) => RULE_LABELS[c].toLowerCase()).join(' or ')} data</div>}
+                  </div>
+                  <TierBar tiers={s.tiers} total={s.students} />
+                </div>
+              )
+            })}
+            {results.transitions && (
+              <div className="chips">
+                <Chip value={results.transitions.tierUp} text="moved up a tier" onClick={() => onShowStudents({ change: 'up' })} />
+                <Chip value={results.transitions.tierDown} text="moved down a tier" onClick={() => onShowStudents({ change: 'down' })} />
+                <Chip value={results.transitions.onlyInLatest} text={`new in ${results.transitions.to}`} onClick={() => onShowStudents({ change: 'new' })} />
+                <Chip value={results.transitions.onlyInPrevious} text={`left after ${results.transitions.from}`} />
+                {results.transitions.comparable.length < RULE_CATEGORIES.filter((c) => latest.rules[c]).length && (
+                  <span className="small muted">
+                    Tier changes count {results.transitions.comparable.map((c) => RULE_LABELS[c].toLowerCase()).join(' and ')} only, the data in both snapshots.
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      <section className="section">
+        <h2 className="h2">By grade</h2>
+        <ByGradeTable results={results} />
+      </section>
+
+      <p className="footnote small muted">
+        {ruleDescriptions(thresholds).tiers}
+        {latest.rules.attendance && usesDistrictPct
+          ? " Absence percentages come from Infinite Campus and reflect the district's own attendance calculation."
+          : ''}
+      </p>
     </>
   )
 }
 
-export function ByGrade({ results }: { results: Results }) {
+function Card({ item, onShowStudents }: { item: GlanceItem; onShowStudents: (f: Partial<ListFilter>) => void }): ReactNode {
+  const body = (
+    <>
+      <span className="kicker">{item.kind === 'win' ? 'Going well' : 'Look here'}</span>
+      <span className="big num">{item.value}</span>
+      <span className="text">{item.text}</span>
+    </>
+  )
+  return item.apply ? (
+    <button className={`card glance-card ${item.kind}`} onClick={() => onShowStudents(item.apply!)}>
+      {body}
+      <span className="go small">See students</span>
+    </button>
+  ) : (
+    <div className={`card glance-card ${item.kind}`}>{body}</div>
+  )
+}
+
+function Chip({ value, text, onClick }: { value: number; text: string; onClick?: () => void }) {
+  const content = (
+    <>
+      <b className="num">{value}</b> {text}
+    </>
+  )
+  return onClick ? (
+    <button className="chip" onClick={onClick}>
+      {content}
+    </button>
+  ) : (
+    <span className="chip static">{content}</span>
+  )
+}
+
+function ByGradeTable({ results }: { results: Results }) {
   const latest = results.summaries[results.summaries.length - 1]
   const cats = RULE_CATEGORIES.filter((c) => latest.rules[c])
   return (
-    <div className="section">
-      <div className="section-head">
-        <h2>By grade</h2>
-        <span className="small muted">{latest.label}. Counts with the rate in each grade.</span>
-      </div>
-      <div className="card table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Grade</th>
-              <th className="r">Students</th>
-              <th className="r">Tier 3</th>
-              <th className="r">Tier 2</th>
+    <div className="card table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Grade</th>
+            <th className="r">Students</th>
+            <th className="r">Tier 3</th>
+            <th className="r">Tier 2</th>
+            {cats.map((c) => (
+              <th key={c} className="r">
+                {RULE_LABELS[c]}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {results.byGrade.map((g) => (
+            <tr key={g.grade}>
+              <td>{g.grade}</td>
+              <td className="r num">{g.students}</td>
+              <td className="r num">
+                {g.tiers[3]} <span className="muted">{pct(g.tiers[3], g.students)}</span>
+              </td>
+              <td className="r num">
+                {g.tiers[2]} <span className="muted">{pct(g.tiers[2], g.students)}</span>
+              </td>
               {cats.map((c) => (
-                <th key={c} className="r">
-                  {RULE_LABELS[c]}
-                </th>
+                <td key={c} className="r num">
+                  {g.flagged[c]} <span className="muted">{pct(g.flagged[c], g.students)}</span>
+                </td>
               ))}
             </tr>
-          </thead>
-          <tbody>
-            {results.byGrade.map((g) => (
-              <tr key={g.grade}>
-                <td>{g.grade}</td>
-                <td className="r num">{g.students}</td>
-                <td className="r num">
-                  {g.tiers[3]} <span className="muted">({pct(g.tiers[3], g.students)})</span>
-                </td>
-                <td className="r num">
-                  {g.tiers[2]} <span className="muted">({pct(g.tiers[2], g.students)})</span>
-                </td>
-                {cats.map((c) => (
-                  <td key={c} className="r num">
-                    {g.flagged[c]} <span className="muted">({pct(g.flagged[c], g.students)})</span>
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+/** One slim line when the latest snapshot is missing a category, plus any file warnings. */
+export function MissingLine({ results, warnings }: { results: Results; warnings: string[] }) {
+  const latest = results.summaries[results.summaries.length - 1]
+  if (!results.missingRules.length && !warnings.length) return null
+  return (
+    <div className="missing small">
+      {results.missingRules.length > 0 && (
+        <span>
+          Not in your {latest.label} files: {results.missingRules.map((c) => RULE_LABELS[c].toLowerCase()).join(', ')}. No student is flagged for{' '}
+          {results.missingRules.length === 1 ? 'it' : 'them'}.
+        </span>
+      )}
+      {warnings.map((w) => (
+        <span key={w}>{w}</span>
+      ))}
     </div>
   )
 }
