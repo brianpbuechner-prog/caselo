@@ -32,3 +32,4 @@ npm-debug.log*
 *.XLS
 !public/sample-data/
 !public/sample-data/*.csv
+!public/sample-data/*.tsv
