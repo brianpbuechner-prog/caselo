@@ -1,0 +1,34 @@
+# Dependencies and build output
+node_modules
+dist
+dist-ssr
+*.local
+.vercel
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.sw?
+
+# Student data protection.
+# Spreadsheet and delimited exports are blocked everywhere so a real SIS
+# export can never be committed. The only exception is the synthetic
+# sample data folder below.
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.CSV
+*.TSV
+*.XLSX
+*.XLS
+!public/sample-data/
+!public/sample-data/*.csv
