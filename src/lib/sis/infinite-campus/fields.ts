@@ -1,10 +1,24 @@
 import type { SisCatalog } from '../types'
 
 // Infinite Campus Ad Hoc fields (Filter Designer, Query Wizard, Data Export).
-// Default header names come from public Infinite Campus documentation.
-// Districts can rename columns, so each field also lists plain-language
-// aliases for fuzzy matching. Course grade field names are a best guess
-// until a real header row is available (marked unverified).
+// Default header names come from public Infinite Campus knowledge base
+// articles (kb.infinitecampus.com), checked October 2026:
+//   - Student Filter Fields for Ad hoc Reporting (field names by folder)
+//   - Viewing Aggregated Attendance Using Ad Hoc (attChronicAbsenteeism.*)
+//   - GPA Calculations (cumGPA.*, unweightedGPA.*, gpa.*)
+//   - Grades, and state guides that cite Student > Grading > Grading
+//     Detail > grading.score (grading.*)
+//   - Virginia behavior guide (behaviorDetail.*)
+// A default header that no public source shows with its object prefix is
+// marked unverified.
+//
+// Districts can rename columns, so each field also lists aliases for fuzzy
+// matching. Aliases include the labels Infinite Campus shows in Filter
+// Designer (for example "Absenteeism Percentage") and plain-language names
+// a district is likely to use. Aliases are matching hints, not documented
+// header names. Avoid one-word aliases that also appear in unrelated
+// headers ("absences", "class", "last"), since a whole-word match scores
+// above the fuzzy threshold.
 
 export const infiniteCampus: SisCatalog = {
   id: 'infinite-campus',
@@ -19,7 +33,7 @@ export const infiniteCampus: SisCatalog = {
       category: 'identity',
       kind: 'id',
       defaultHeaders: ['student.studentNumber'],
-      aliases: ['student number', 'student id', 'student num', 'local id', 'id number', 'student no', 'stu number'],
+      aliases: ['student number', 'student id', 'student num', 'local id', 'id number', 'student no', 'stu number', 'local student id', 'district student id', 'stu id'],
     },
     {
       key: 'stateID',
@@ -27,7 +41,7 @@ export const infiniteCampus: SisCatalog = {
       category: 'identity',
       kind: 'id',
       defaultHeaders: ['student.stateID'],
-      aliases: ['state id', 'state student id', 'ssid', 'marss', 'marss number', 'state number'],
+      aliases: ['state id', 'state student id', 'ssid', 'marss', 'marss number', 'state number', 'state student number', 'statewide id', 'state assigned id'],
     },
     {
       key: 'lastName',
@@ -35,7 +49,7 @@ export const infiniteCampus: SisCatalog = {
       category: 'identity',
       kind: 'text',
       defaultHeaders: ['student.lastName'],
-      aliases: ['last name', 'surname', 'family name', 'student last name'],
+      aliases: ['last name', 'surname', 'family name', 'student last name', 'legal last name', 'lname'],
     },
     {
       key: 'firstName',
@@ -43,7 +57,7 @@ export const infiniteCampus: SisCatalog = {
       category: 'identity',
       kind: 'text',
       defaultHeaders: ['student.firstName'],
-      aliases: ['first name', 'given name', 'student first name'],
+      aliases: ['first name', 'given name', 'student first name', 'legal first name', 'fname'],
     },
     {
       key: 'grade',
@@ -51,7 +65,7 @@ export const infiniteCampus: SisCatalog = {
       category: 'identity',
       kind: 'grade',
       defaultHeaders: ['student.grade'],
-      aliases: ['grade level', 'current grade', 'student grade', 'grade', 'gr'],
+      aliases: ['grade level', 'current grade', 'student grade', 'grade', 'gr', 'enrollment grade', 'grade lvl', 'gr level'],
     },
 
     // Attendance summary (one row per student)
@@ -70,6 +84,11 @@ export const infiniteCampus: SisCatalog = {
         'absence rate',
         'absenteeism rate',
         'pct absent',
+        'percent absenteeism',
+        'absenteeism pct',
+        'chronic absenteeism percentage',
+        'chronic absence rate',
+        'percent of days absent',
       ],
       note: 'Accepts 12.5, 12.5%, or 0.125.',
     },
@@ -79,7 +98,7 @@ export const infiniteCampus: SisCatalog = {
       category: 'attendanceSummary',
       kind: 'number',
       defaultHeaders: ['attChronicAbsenteeism.daysAbsent'],
-      aliases: ['days absent', 'absent days', 'total absences', 'total days absent'],
+      aliases: ['days absent', 'absent days', 'total absences', 'total days absent', 'number of absences', 'absence count', 'days missed', 'absences ytd'],
     },
     {
       key: 'scheduledDays',
@@ -87,7 +106,7 @@ export const infiniteCampus: SisCatalog = {
       category: 'attendanceSummary',
       kind: 'number',
       defaultHeaders: ['attChronicAbsenteeism.scheduledDays'],
-      aliases: ['scheduled days', 'days scheduled', 'days enrolled', 'enrolled days', 'membership days', 'days in membership'],
+      aliases: ['scheduled days', 'days scheduled', 'days enrolled', 'enrolled days', 'membership days', 'days in membership', 'days possible', 'possible days', 'instructional days'],
     },
     {
       key: 'chronicallyAbsent',
@@ -95,7 +114,7 @@ export const infiniteCampus: SisCatalog = {
       category: 'attendanceSummary',
       kind: 'flag',
       defaultHeaders: ['attChronicAbsenteeism.chronicallyAbsent'],
-      aliases: ['chronically absent', 'chronic absentee', 'chronic absence', 'chronic flag'],
+      aliases: ['chronically absent', 'chronic absentee', 'chronic absence', 'chronic flag', 'chronic absenteeism flag', 'chronically absent flag', 'is chronically absent'],
       note: '1 or 0, or Y or N.',
     },
 
@@ -105,16 +124,17 @@ export const infiniteCampus: SisCatalog = {
       label: 'Cumulative GPA',
       category: 'gpa',
       kind: 'number',
-      defaultHeaders: ['cumGPA.cumGPA'],
-      aliases: ['cumulative gpa', 'cum gpa', 'weighted gpa', 'gpa'],
+      // gpa.cumGpaBasic is the Learner Portfolio > GPA folder.
+      defaultHeaders: ['cumGPA.cumGPA', 'gpa.cumGpaBasic'],
+      aliases: ['cumulative gpa', 'cum gpa', 'weighted gpa', 'gpa', 'cumulative grade point average', 'overall gpa', 'gpa cumulative', 'cum gpa basic'],
     },
     {
       key: 'unweightedGPA',
       label: 'Unweighted cumulative GPA',
       category: 'gpa',
       kind: 'number',
-      defaultHeaders: ['unweightedGPA.cumGPA'],
-      aliases: ['unweighted gpa', 'unweighted cumulative gpa', 'unweighted cum gpa'],
+      defaultHeaders: ['unweightedGPA.cumGPA', 'gpa.cumGPAUnweighted'],
+      aliases: ['unweighted gpa', 'unweighted cumulative gpa', 'unweighted cum gpa', 'gpa unweighted', 'cum gpa unweighted', 'unweighted grade point average'],
     },
 
     // Behavior incidents (many rows per student)
@@ -124,7 +144,7 @@ export const infiniteCampus: SisCatalog = {
       category: 'behavior',
       kind: 'id',
       defaultHeaders: ['behaviorDetail.incidentID'],
-      aliases: ['incident id', 'incident number', 'behavior incident id', 'incident'],
+      aliases: ['incident id', 'incident number', 'behavior incident id', 'incident', 'incident no', 'behavior incident number'],
     },
     {
       key: 'incidentDate',
@@ -132,7 +152,7 @@ export const infiniteCampus: SisCatalog = {
       category: 'behavior',
       kind: 'date',
       defaultHeaders: ['behaviorDetail.incidentDate'],
-      aliases: ['incident date', 'behavior date', 'date of incident'],
+      aliases: ['incident date', 'behavior date', 'date of incident', 'behavior incident date', 'offense date'],
     },
     {
       key: 'resolutionCode',
@@ -140,7 +160,7 @@ export const infiniteCampus: SisCatalog = {
       category: 'behavior',
       kind: 'code',
       defaultHeaders: ['behaviorDetail.resolutionCode'],
-      aliases: ['resolution code', 'resolution', 'consequence', 'action code'],
+      aliases: ['resolution code', 'resolution', 'consequence', 'action code', 'resolution type', 'resolution name', 'disciplinary action', 'action taken'],
     },
 
     // Attendance detail (many rows per student)
@@ -150,7 +170,7 @@ export const infiniteCampus: SisCatalog = {
       category: 'attendanceDetail',
       kind: 'date',
       defaultHeaders: ['AttendanceDetail.date'],
-      aliases: ['attendance date', 'absence date'],
+      aliases: ['attendance date', 'absence date', 'date absent', 'mark date', 'attendance day'],
     },
     {
       key: 'attendanceCode',
@@ -158,27 +178,40 @@ export const infiniteCampus: SisCatalog = {
       category: 'attendanceDetail',
       kind: 'code',
       defaultHeaders: ['AttendanceDetail.code'],
-      aliases: ['attendance code', 'absence code', 'att code'],
+      aliases: ['attendance code', 'absence code', 'att code', 'attendance mark', 'period mark', 'mark code', 'absence type'],
     },
 
-    // Course grades (many rows per student). Unverified field names.
+    // Course grades (many rows per student), from Student > Grading >
+    // Grading Detail. The object is "grading", not "gradingDetail".
+    // Transcript Detail (transcriptDetail.*) is left out on purpose: a
+    // transcript covers every year, so an old failing grade would flag a
+    // student today.
     {
       key: 'courseName',
       label: 'Course name',
       category: 'courseGrades',
       kind: 'text',
-      defaultHeaders: ['gradingDetail.courseName'],
-      aliases: ['course name', 'course', 'course title', 'class name'],
-      unverified: true,
+      defaultHeaders: ['grading.courseName'],
+      aliases: ['course name', 'course', 'course title', 'class name', 'course description', 'class title'],
     },
     {
       key: 'courseGrade',
       label: 'Course grade',
       category: 'courseGrades',
       kind: 'code',
-      defaultHeaders: ['gradingDetail.score'],
-      aliases: ['course grade', 'letter grade', 'grading score', 'mark', 'score', 'final grade'],
-      unverified: true,
+      defaultHeaders: ['grading.score'],
+      aliases: [
+        'course grade',
+        'letter grade',
+        'grading score',
+        'mark',
+        'score',
+        'final grade',
+        'posted grade',
+        'term grade',
+        'grade mark',
+        'score list item name',
+      ],
     },
   ],
   requirements: {
