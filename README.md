@@ -5,7 +5,7 @@ student information system (SIS) export, flags students who may need support
 using rules you can see and adjust, and sorts them into tiers. With more than
 one export from different points in the year, it also shows what changed.
 
-Live site: https://caselo-mauve.vercel.app
+Live site: https://caselo.org
 
 ## What it does
 
