@@ -12,9 +12,17 @@ Live site: https://caselo.org
 - Reads 1 to 4 exports. Each file gets a label (for example Q1 or Q2). Files
   with the same label are combined into one snapshot, so a Q2 student file and
   a Q2 behavior file are read together. Snapshots are compared in order.
-- Detects the delimiter (comma, tab, pipe, or caret) and matches columns to
-  known fields. The detected mapping is shown so you can confirm or correct
-  it, and a mapping can be downloaded as JSON and loaded again later.
+- Reads delimited text (CSV, tab, pipe, or caret), Excel and OpenDocument
+  spreadsheets (.xlsx, .xls, .xlsm, .ods), or text pasted into the page.
+  A spreadsheet is converted to CSV text in the browser. When a workbook has
+  more than one sheet with data, you pick the sheet (the first one with data
+  is the default).
+- Detects the delimiter and finds the header row, skipping a report title,
+  a "generated on" line, or blank lines above it. The file review shows
+  which line was used as the header.
+- Matches columns to known fields. The detected mapping is shown so you can
+  confirm or correct it, and a mapping can be downloaded as JSON and loaded
+  again later.
 - Detects whether a file has one row per student or many (behavior incidents,
   attendance marks, course grades) and groups many-row files by student.
 - Runs three rules, each with thresholds you can change:
@@ -51,9 +59,13 @@ Student data never leaves the browser.
   files are served from the site itself, not a CDN.
 - Settings that contain no student data (role, thresholds, table density) are
   saved in localStorage so they persist between visits.
+- Spreadsheets are read with SheetJS, which is bundled with the site and
+  loaded only when a spreadsheet is chosen. Pasted text is kept in memory
+  and the paste box has spell check turned off.
 - Development and demos use synthetic data only. The `.gitignore` blocks
-  `.csv`, `.tsv`, `.xls`, and `.xlsx` files everywhere except
-  `public/sample-data/`, so a real export cannot be committed by accident.
+  `.csv`, `.tsv`, `.xls`, `.xlsx`, `.xlsm`, and `.ods` files everywhere
+  except `public/sample-data/`, so a real export cannot be committed by
+  accident.
 
 ## Run locally
 
@@ -71,18 +83,20 @@ npm run sample-data  # regenerate the synthetic sample files
 
 Caselo reads Infinite Campus Ad Hoc exports from Filter Designer, Query
 Wizard, or Data Export. Default header names come from public Infinite Campus
-documentation. Districts can rename columns, so each field also has
-plain-language aliases for fuzzy matching (for example "Grade Level" or
-"Absence %").
+knowledge base articles. Districts can rename columns, so each field also has
+aliases for fuzzy matching: the labels Infinite Campus shows in Filter
+Designer (for example "Absenteeism Percentage") and plain-language names (for
+example "Grade Level" or "Absence %"). Header names are matched without
+regard to case.
 
 | Category | Default headers |
 |---|---|
 | Student identity | `student.studentNumber`, `student.stateID`, `student.lastName`, `student.firstName`, `student.grade` |
 | Attendance summary | `attChronicAbsenteeism.absenteeismPercentage`, `attChronicAbsenteeism.daysAbsent`, `attChronicAbsenteeism.scheduledDays`, `attChronicAbsenteeism.chronicallyAbsent` (1 or 0) |
-| GPA | `cumGPA.cumGPA`, `unweightedGPA.cumGPA` |
+| GPA | `cumGPA.cumGPA`, `unweightedGPA.cumGPA`, `gpa.cumGpaBasic`, `gpa.cumGPAUnweighted` |
 | Behavior | `behaviorDetail.incidentID`, `behaviorDetail.incidentDate`, `behaviorDetail.resolutionCode` |
 | Attendance detail | `AttendanceDetail.date`, `AttendanceDetail.code` |
-| Course grades | `gradingDetail.courseName`, `gradingDetail.score` (unverified guess) |
+| Course grades | `grading.courseName`, `grading.score` (Student > Grading > Grading Detail) |
 
 Notes:
 
@@ -91,8 +105,13 @@ Notes:
   page says so. Otherwise Caselo computes the rate from days absent and
   scheduled days, or from counted attendance detail rows divided by scheduled
   days. For attendance detail, you choose which codes count as absent.
-- Course grade field names have not been checked against a real export, so
-  failing-grade detection is a best guess until they are.
+- Course grades come from Grading Detail. Transcript Detail
+  (`transcriptDetail.score`) is not a default name, because a transcript
+  covers every year and an old failing grade would flag a student today. It
+  still shows as a close match for you to confirm if you want it.
+- The `attendanceDetail` object name is documented, but the `date` and
+  `code` field names come from an unlabeled field list, and none of these
+  names have been checked against a real export.
 - Fields vary by district. A real header row will make detection better.
 
 ## Project structure
@@ -101,7 +120,7 @@ Notes:
 src/
   config/rules.ts              every threshold and default
   lib/
-    files/                     decode text, detect delimiter, read files
+    files/                     decode text, read spreadsheets, detect delimiter and header row, read files
     db/                        DuckDB-WASM setup (browser) and the SqlRunner interface
     sis/                       field catalogs: types, registry, infinite-campus/fields.ts
     mapping/                   default and fuzzy column detection, mapping JSON
@@ -115,7 +134,7 @@ src/
   components/                  React UI
 tests/                         Vitest tests, run against the synthetic data
 scripts/generate-sample-data.mjs
-public/sample-data/            synthetic exports (about 300 invented students)
+public/sample-data/            synthetic exports (about 300 invented students), including one .xlsx workbook
 ```
 
 The rules engine is plain TypeScript, separate from DuckDB, so it is easy to
