@@ -2,6 +2,7 @@
 
 import type { ColumnMapping } from './mapping/detect'
 import type { Delimiter } from './files/delimiter'
+import type { SheetText } from './files/workbook'
 import type { Category } from './sis/types'
 
 /** One uploaded file, before analysis. */
@@ -13,6 +14,9 @@ export interface UploadedFile {
   delimiter: Delimiter
   headers: string[]
   mapping: ColumnMapping
+  /** For a spreadsheet: every non-empty sheet, and the one in use. */
+  sheets?: SheetText[]
+  sheet?: string
 }
 
 export interface AttendanceMark {
