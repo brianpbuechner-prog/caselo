@@ -68,6 +68,18 @@ export async function readFile(file: File, catalog: SisCatalog, fallbackLabel: s
   return buildUpload(file.name, text, catalog, label)
 }
 
+/**
+ * Build an upload from text pasted into the page, for example cells copied
+ * from a spreadsheet (tab delimited) or lines copied from a CSV. Same
+ * delimiter detection and mapping as a file.
+ */
+export function readPasted(text: string, catalog: SisCatalog, label: string, name = 'Pasted text'): UploadedFile {
+  const clean = text.replace(/^\uFEFF/, '')
+  const problem = rejectReason(clean)
+  if (problem) throw new Error(problem.replace('This file', 'The pasted text'))
+  return buildUpload(name, clean, catalog, label.trim())
+}
+
 /** Re-read a file's headers with a different delimiter. */
 export function withDelimiter(f: UploadedFile, delimiter: Delimiter, catalog: SisCatalog): UploadedFile {
   return { ...f, ...readLayout(f.text, delimiter, catalog) }

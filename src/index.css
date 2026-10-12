@@ -90,6 +90,17 @@ input[type='number'] { width: 90px; }
 .dropzone:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
 .dropzone strong { display: block; font-weight: 600; font-size: 16px; margin-bottom: 4px; }
 .dropzone.compact { padding: 18px; box-shadow: none; }
+.paste {
+  width: 100%; display: grid; gap: 14px; border: 1px solid var(--border); border-radius: 16px;
+  background: var(--surface); box-shadow: var(--shadow); padding: 20px;
+}
+.paste textarea {
+  width: 100%; min-height: 180px; resize: vertical; padding: 10px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--surface); color: var(--text);
+  font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; tab-size: 4;
+}
+.paste textarea:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+.paste-actions { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
 .privacy { display: flex; gap: 10px; align-items: flex-start; color: var(--muted); font-size: 14px; max-width: 520px; }
 .privacy svg { flex: none; margin-top: 2px; color: var(--muted); }
 .error { color: var(--danger); font-size: 14px; }
