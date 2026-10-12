@@ -30,6 +30,7 @@ export async function loadRawTable(
   text: string,
   delimiter: Delimiter,
   columnCount: number,
+  headerLine = 0,
 ): Promise<void> {
   await db.registerText(virtualName, text)
   await db.query(`
@@ -39,7 +40,7 @@ export async function loadRawTable(
       quote = '"',
       escape = '"',
       header = false,
-      skip = 1,
+      skip = ${headerLine + 1},
       auto_detect = false,
       columns = ${columnsSpec(columnCount)},
       null_padding = true,
@@ -192,7 +193,7 @@ export async function processFile(
   const table = `raw_${position}`
   const virtualName = `upload_${position}.txt`
   try {
-    await loadRawTable(db, table, virtualName, file.text, file.delimiter, file.headers.length)
+    await loadRawTable(db, table, virtualName, file.text, file.delimiter, file.headers.length, file.headerLine)
     const keyExpr = `NULLIF(TRIM(c${file.mapping[keyField].index}), '')`
     const shape = await detectShape(db, table, keyExpr, hasEventCategory(categories))
     const rows = await rollupTable(db, table, file.mapping, keyField, categories)

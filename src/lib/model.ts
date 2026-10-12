@@ -12,6 +12,8 @@ export interface UploadedFile {
   label: string
   text: string
   delimiter: Delimiter
+  /** Zero-based record index of the header row. Records before it are skipped. */
+  headerLine: number
   headers: string[]
   mapping: ColumnMapping
   /** For a spreadsheet: every non-empty sheet, and the one in use. */

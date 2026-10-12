@@ -75,7 +75,9 @@ export function FileReview({
                   <span className="file-name">{f.fileName}</span>
                   <span className="small muted">
                     {f.headers.length} columns,{' '}
-                    {f.sheet ? `sheet "${f.sheet}"` : `${delimiterLabel(f.delimiter).toLowerCase()} delimited`}
+                    {f.sheet ? `sheet "${f.sheet}"` : `${delimiterLabel(f.delimiter).toLowerCase()} delimited`}, header row on
+                    line {f.headerLine + 1}
+                    {f.headerLine > 0 && ' (lines above it are skipped)'}
                   </span>
                   <span style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
                     <button className="btn ghost sm" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up" title="Move up">

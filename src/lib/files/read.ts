@@ -2,11 +2,11 @@
 // headers, and auto-map columns. Spreadsheets are converted to CSV text
 // first and then take the same path. Runs entirely in the browser.
 
-import { autoMap } from '../mapping/detect'
+import { autoMap, type ColumnMapping } from '../mapping/detect'
 import type { UploadedFile } from '../model'
 import type { SisCatalog } from '../sis/types'
 import { decodeText, rejectReason } from './decode'
-import { detectDelimiter, readHeaders, type Delimiter } from './delimiter'
+import { detectDelimiter, detectHeaderRow, readHeaders, type Delimiter } from './delimiter'
 import { isSpreadsheet, readWorkbook, type SheetText } from './workbook'
 
 let counter = 0
@@ -24,10 +24,17 @@ export function guessLabel(fileName: string): string | null {
   return v.length <= 4 ? v.toUpperCase() : v[0].toUpperCase() + v.slice(1).toLowerCase()
 }
 
+const matchedCount = (m: ColumnMapping) => Object.values(m).filter((x) => x.index != null).length
+
+/** Header row, header names, and auto-mapping for text with a known delimiter. */
+function readLayout(text: string, delimiter: Delimiter, catalog: SisCatalog) {
+  const headerLine = detectHeaderRow(text, delimiter, (h) => matchedCount(autoMap(h, catalog)))
+  const headers = readHeaders(text, delimiter, headerLine)
+  return { delimiter, headerLine, headers, mapping: autoMap(headers, catalog) }
+}
+
 export function buildUpload(fileName: string, text: string, catalog: SisCatalog, label: string, delimiter?: Delimiter): UploadedFile {
-  const d = delimiter ?? detectDelimiter(text)
-  const headers = readHeaders(text, d)
-  return { id: nextId(), fileName, label, text, delimiter: d, headers, mapping: autoMap(headers, catalog) }
+  return { id: nextId(), fileName, label, text, ...readLayout(text, delimiter ?? detectDelimiter(text), catalog) }
 }
 
 /** Build an upload from a workbook's sheets, using the first non-empty sheet. */
@@ -63,8 +70,7 @@ export async function readFile(file: File, catalog: SisCatalog, fallbackLabel: s
 
 /** Re-read a file's headers with a different delimiter. */
 export function withDelimiter(f: UploadedFile, delimiter: Delimiter, catalog: SisCatalog): UploadedFile {
-  const headers = readHeaders(f.text, delimiter)
-  return { ...f, delimiter, headers, mapping: autoMap(headers, catalog) }
+  return { ...f, ...readLayout(f.text, delimiter, catalog) }
 }
 
 export const SAMPLE_FILES = [
