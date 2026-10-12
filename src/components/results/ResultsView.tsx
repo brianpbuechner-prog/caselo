@@ -1,13 +1,17 @@
-import { useMemo, useState } from 'react'
+// The results page. One page, read top to bottom: the summary and a short
+// role-based "start here" section, then patterns, then every student.
+
+import { useMemo, useRef, useState } from 'react'
 import type { Thresholds } from '../../config/rules'
 import { analyze } from '../../lib/compare/analyze'
 import type { Snapshot } from '../../lib/model'
-import { getRole, ROLES, type TabId } from '../../lib/roles/roles'
-import { CaseloadTab, MissingLine } from './Overview'
-import { DEFAULT_FILTER, StudentsTab, type ListFilter } from './StudentList'
+import { getRole, ROLES } from '../../lib/roles/roles'
+import { Brief } from './Brief'
+import { Patterns } from './Patterns'
+import { StudentDetail } from './StudentDetail'
+import { DEFAULT_FILTER, StudentList, type ListFilter } from './StudentList'
+import { MissingLine, Summary } from './Summary'
 import { ThresholdPanel } from './ThresholdPanel'
-
-const TAB_LABELS: Record<TabId, string> = { students: 'Students', caseload: 'Caseload' }
 
 export function ResultsView({
   snapshots,
@@ -35,11 +39,17 @@ export function ResultsView({
   onAbout: () => void
 }) {
   const results = useMemo(() => analyze(snapshots, thresholds), [snapshots, thresholds])
-  const tabs = getRole(role).tabs
-  const [tab, setTab] = useState<TabId>(tabs[0])
   const [filter, setFilter] = useState<ListFilter>(DEFAULT_FILTER)
   const [panel, setPanel] = useState(false)
+  const [openKey, setOpenKey] = useState<string | null>(null)
+  const listRef = useRef<HTMLDivElement>(null)
   const onFilter = (f: Partial<ListFilter>) => setFilter((cur) => ({ ...cur, ...f }))
+
+  /** Apply a filter from a chart or summary and bring the list into view. */
+  const showStudents = (f: Partial<ListFilter>) => {
+    setFilter({ ...DEFAULT_FILTER, ...f })
+    listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   const attendanceCodes = useMemo(() => {
     const codes = new Set<string>()
@@ -50,6 +60,7 @@ export function ResultsView({
 
   const labels = results.labels
   const context = labels.length > 1 ? `${labels.at(-1)}, compared with ${labels.at(-2)}` : labels[0]
+  const open = openKey ? results.students.find((s) => s.key === openKey) : null
 
   return (
     <>
@@ -61,13 +72,16 @@ export function ResultsView({
           <span className="context">{context}</span>
           <div className="actions">
             {ROLES.length > 1 && (
-              <select aria-label="Role" value={role} onChange={(e) => onRole(e.target.value)}>
-                {ROLES.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
+              <label className="role">
+                <span className="small muted">View as</span>
+                <select value={getRole(role).id} onChange={(e) => onRole(e.target.value)}>
+                  {ROLES.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             )}
             <button className="btn ghost sm" onClick={() => setPanel(true)}>
               Rules
@@ -83,30 +97,17 @@ export function ResultsView({
       </header>
       <main className="page">
         <MissingLine results={results} warnings={warnings} />
-        <div className="tabs" role="tablist" aria-label="Results">
-          {tabs.map((t) => (
-            <button key={t} role="tab" aria-selected={tab === t} className={`tab${tab === t ? ' on' : ''}`} onClick={() => setTab(t)}>
-              {TAB_LABELS[t]}
-            </button>
-          ))}
+        <div className="top">
+          <Summary results={results} filter={filter} onShowStudents={showStudents} />
+          <Brief role={getRole(role)} results={results} onOpenStudent={setOpenKey} onShowStudents={showStudents} />
         </div>
-        <div role="tabpanel" aria-label={TAB_LABELS[tab]}>
-          {tab === 'students' ? (
-            <StudentsTab results={results} filter={filter} onFilter={onFilter} compact={compact} />
-          ) : (
-            <CaseloadTab
-              results={results}
-              snapshots={snapshots}
-              thresholds={thresholds}
-              onShowStudents={(f) => {
-                setFilter({ ...DEFAULT_FILTER, ...f })
-                setTab('students')
-                window.scrollTo(0, 0)
-              }}
-            />
-          )}
+        <Patterns results={results} thresholds={thresholds} onShowStudents={showStudents} />
+        <div ref={listRef} className="roster">
+          <h2 className="h2">All students</h2>
+          <StudentList results={results} filter={filter} onFilter={onFilter} compact={compact} onOpenStudent={setOpenKey} />
         </div>
       </main>
+      {open && <StudentDetail student={open} results={results} thresholds={thresholds} onClose={() => setOpenKey(null)} />}
       {panel && (
         <ThresholdPanel
           thresholds={thresholds}

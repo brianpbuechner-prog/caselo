@@ -1,11 +1,12 @@
-// The Students tab: one wins-first number, the tier bar, then the list.
-// Values that caused a flag are marked; selecting one shows the rule.
+// The full student list. Values that caused a flag are marked; selecting
+// one shows the rule. Selecting a name opens that student's detail.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { gradeSortValue, newlyFlagged, type ChangeStatus, type Results, type StudentResult } from '../../lib/compare/analyze'
 import { downloadText, resultsToCsv } from '../../lib/export/csv'
 import { RULE_CATEGORIES, RULE_LABELS, type MarkedValue, type RuleCategory } from '../../lib/rules/engine'
-import { TierBar, type TierFilter } from './TierBar'
+import { comboKey } from '../../lib/compare/insights'
+import type { TierFilter } from './TierBar'
 
 export interface ListFilter {
   search: string
@@ -14,14 +15,21 @@ export interface ListFilter {
   grade: string
   change: 'all' | ChangeStatus
   newly: RuleCategory | null
+  /** Students flagged in the previous snapshot for this category and not now. */
+  resolved: RuleCategory | null
+  /** An exact set of flags, as made by comboKey. */
+  combo: string | null
 }
 
-export const DEFAULT_FILTER: ListFilter = { search: '', tier: 'all', flag: 'any', grade: 'all', change: 'all', newly: null }
+export const DEFAULT_FILTER: ListFilter = { search: '', tier: 'all', flag: 'any', grade: 'all', change: 'all', newly: null, resolved: null, combo: null }
 
 type SortKey = 'priority' | 'name' | 'grade' | 'absence' | 'gpa' | 'failing' | 'incidents' | 'change'
 
-const name = (s: StudentResult) =>
+export const studentName = (s: StudentResult) =>
   [s.latest.row.lastName, s.latest.row.firstName].filter(Boolean).join(', ') || s.latest.row.studentNumber || s.key
+const name = studentName
+
+const hasFlag = (e: StudentResult['latest'] | null, c: RuleCategory) => Boolean(e?.flags.some((f) => f.category === c))
 
 /** Nulls always sort last. */
 function cmpNum(a: number | null, b: number | null, dir: number): number {
@@ -48,48 +56,18 @@ const CHANGE_SHORT: Record<ChangeStatus, string> = {
   new: 'New',
 }
 
-export function StudentsTab({
+export function StudentList({
   results,
   filter,
   onFilter,
   compact,
+  onOpenStudent,
 }: {
   results: Results
   filter: ListFilter
   onFilter: (f: Partial<ListFilter>) => void
   compact: boolean
-}) {
-  const latest = results.summaries[results.summaries.length - 1]
-  const noFlags = results.students.filter((s) => s.latest.flags.length === 0).length
-  return (
-    <>
-      <section className="glance card" aria-label="Caseload at a glance">
-        <div className="glance-win">
-          <span className="big num">{latest.students ? Math.round((noFlags / latest.students) * 100) : 0}%</span>
-          <span>
-            of students have no flags
-            <span className="muted small num">
-              {noFlags} of {latest.students} in {latest.label}
-            </span>
-          </span>
-        </div>
-        <TierBar tiers={latest.tiers} total={latest.students} selected={filter.tier} onSelect={(tier) => onFilter({ tier })} />
-      </section>
-      <StudentList results={results} filter={filter} onFilter={onFilter} compact={compact} />
-    </>
-  )
-}
-
-function StudentList({
-  results,
-  filter,
-  onFilter,
-  compact,
-}: {
-  results: Results
-  filter: ListFilter
-  onFilter: (f: Partial<ListFilter>) => void
-  compact: boolean
+  onOpenStudent: (key: string) => void
 }) {
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: 'priority', dir: 1 })
   const latest = results.summaries[results.summaries.length - 1]
@@ -116,6 +94,8 @@ function StudentList({
       if (filter.grade !== 'all' && (e.row.grade ?? 'Unknown') !== filter.grade) return false
       if (filter.change !== 'all' && s.change !== filter.change) return false
       if (filter.newly && !newlyFlagged(s, filter.newly)) return false
+      if (filter.resolved && !(hasFlag(s.previous, filter.resolved) && !hasFlag(e, filter.resolved))) return false
+      if (filter.combo && comboKey(e.flags.map((f) => f.category)) !== filter.combo) return false
       return true
     })
     const d = sort.dir
@@ -143,10 +123,10 @@ function StudentList({
   )
 
   const filtered = rows.length !== results.students.length
-  const changeValue = filter.newly ? `newly-${filter.newly}` : filter.change
+  const changeValue = filter.newly ? `newly-${filter.newly}` : filter.resolved ? `resolved-${filter.resolved}` : filter.change
 
   return (
-    <section className="card list" aria-label="Students">
+    <section className="card list" aria-label="All students">
       <div className="filters">
         <input
           type="search"
@@ -178,8 +158,9 @@ function StudentList({
             value={changeValue}
             onChange={(e) => {
               const v = e.target.value
-              if (v.startsWith('newly-')) onFilter({ change: 'all', newly: v.slice(6) as RuleCategory })
-              else onFilter({ change: v as ListFilter['change'], newly: null })
+              if (v.startsWith('newly-')) onFilter({ change: 'all', newly: v.slice(6) as RuleCategory, resolved: null })
+              else if (v.startsWith('resolved-')) onFilter({ change: 'all', newly: null, resolved: v.slice(9) as RuleCategory })
+              else onFilter({ change: v as ListFilter['change'], newly: null, resolved: null })
             }}
           >
             <option value="all">Any change</option>
@@ -191,11 +172,22 @@ function StudentList({
                 Newly flagged: {RULE_LABELS[c].toLowerCase()}
               </option>
             ))}
+            {results.transitions?.comparable.map((c) => (
+              <option key={c} value={`resolved-${c}`}>
+                No longer flagged: {RULE_LABELS[c].toLowerCase()}
+              </option>
+            ))}
           </select>
         )}
         <span className="count num" role="status">
           {filtered ? `${rows.length} of ${results.students.length}` : rows.length} students
         </span>
+        {filter.combo && (
+          <span className="chip static">
+            {filter.combo.split('+').map((c) => RULE_LABELS[c as RuleCategory]).join(' and ')}
+            {filter.combo.includes('+') ? '' : ' only'}
+          </span>
+        )}
         {filtered && (
           <button className="btn ghost sm" onClick={() => onFilter({ ...DEFAULT_FILTER })}>
             Clear
@@ -226,7 +218,7 @@ function StudentList({
           </thead>
           <tbody>
             {rows.map((s) => (
-              <Row key={s.key} s={s} labels={results.labels} show={show} multi={multi} />
+              <Row key={s.key} s={s} labels={results.labels} show={show} multi={multi} onOpen={() => onOpenStudent(s.key)} />
             ))}
             {rows.length === 0 && (
               <tr>
@@ -238,7 +230,7 @@ function StudentList({
           </tbody>
         </table>
       </div>
-      <p className="list-foot small muted">Marked values caused a flag. Select one to see the rule.</p>
+      <p className="list-foot small muted">Marked values caused a flag. Select one to see the rule, or a name to see the student.</p>
     </section>
   )
 }
@@ -286,11 +278,13 @@ function Row({
   labels,
   show,
   multi,
+  onOpen,
 }: {
   s: StudentResult
   labels: string[]
   show: Record<MarkedValue, boolean>
   multi: boolean
+  onOpen: () => void
 }) {
   const e = s.latest
   const r = e.row
@@ -312,7 +306,9 @@ function Row({
         <span className={`tier tier-${e.tier}`}>Tier {e.tier}</span>
       </td>
       <td>
-        <div className="student-name">{[r.lastName, r.firstName].filter(Boolean).join(', ') || 'No name'}</div>
+        <button className="student-name" onClick={onOpen}>
+          {[r.lastName, r.firstName].filter(Boolean).join(', ') || 'No name'}
+        </button>
         <div className="small muted num">{r.studentNumber ?? r.stateId}</div>
       </td>
       <td className="num">{r.grade ?? ''}</td>

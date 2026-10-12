@@ -24,9 +24,15 @@ Live site: https://caselo.org
   - Behavior: 3 or more incidents.
 - Assigns Tier 1 (no flags), Tier 2 (1 flag), or Tier 3 (2 or more flags).
   A student gets at most one flag per category.
-- Shows a prioritized student list with the reason for every flag, a caseload
-  summary by grade and flag type, change between snapshots, and a CSV export
-  built in the browser.
+- Shows the results on one page: how many students have no flags and what
+  changed since the last snapshot, a short "start here" section, patterns
+  (flag rates by grade, how flags overlap, and how students are spread around
+  each rule), and the full student list with the rule behind every flag.
+  Selecting a student shows their values in every snapshot. The list exports
+  to CSV in the browser.
+- The "start here" section depends on the role chosen. Counselors see five
+  students. Administrators see the grades and areas with the highest rates,
+  with no names.
 - Says clearly which categories were not in your files, and runs only the
   rules that apply.
 
@@ -102,8 +108,9 @@ src/
     grouping/                  row shape detection, per-student rollups, snapshots
     rules/engine.ts            flags, reasons, and tiers
     compare/analyze.ts         caseload summaries and change between snapshots
+    compare/insights.ts        patterns: grade rates, overlap, distributions, start here
     export/csv.ts              results CSV
-    roles/roles.ts             roles and which views each one sees
+    roles/roles.ts             roles and what the start here section shows
     preferences.ts             saved settings (no student data)
   components/                  React UI
 tests/                         Vitest tests, run against the synthetic data
