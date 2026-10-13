@@ -1,0 +1,30 @@
+{
+  "model": "claude-sonnet-5-5",
+  "draft": {
+    "narrative": "This Q1 summary covers 300 students and checks two areas: attendance and academics. Behavior was not in the files, so it was not checked and nothing is reported for it. Attendance uses a chronic absence rule of missing 10% or more of scheduled days, and 63 students (21%) were flagged. Academics uses an unweighted GPA below 2.00, or 1 or more failing course grade when course grades are in the file, and 36 students (12%) were flagged. 23 students (8%) were flagged in both areas. By tier, 224 students (75%) are in Tier 1, 53 (18%) are in Tier 2, and 23 (8%) are in Tier 3. In grade 9, with 78 students, 20 (26%) were flagged for attendance and 13 (17%) for academics. In grade 12, with 70 students, 19 (27%) were flagged for attendance and 10 (14%) for academics. In grade 10, the attendance count is not shown, to protect small counts, and the academics count is fewer than 10. In grade 11, both counts are fewer than 10. No earlier snapshot was provided, so no change over time is described.",
+    "goals": [
+      {
+        "area": "attendance",
+        "statement": "By [date], all students will decrease the number of students flagged for chronic absence from 63 students (21%) to [target set by counselor].",
+        "baseline": "Attendance, Q1: 63 students flagged, 21% of 300"
+      },
+      {
+        "area": "academics",
+        "statement": "By [date], all students will decrease the number of students flagged for academics from 36 students (12%) to [target set by counselor].",
+        "baseline": "Academics, Q1: 36 students flagged, 12% of 300"
+      },
+      {
+        "area": "overall",
+        "statement": "By [date], all students will increase the number of students in Tier 1 (no flags) from 224 students (75%) to [target set by counselor].",
+        "baseline": "Tiers, Q1: 224 students in Tier 1, 75% of 300"
+      }
+    ],
+    "caveats": [
+      "Behavior was not in the files, so it was not checked and is not reflected in the flags or tiers.",
+      "Counts marked fewer than 10 or not shown are unknown, so grade 10 and grade 11 are only partly described.",
+      "Flags and tiers use the rules in this file: chronic absence at 10% or more of scheduled days, and an unweighted GPA below 2.00 or 1 or more failing course grade when course grades are in the file.",
+      "This is a single Q1 snapshot with no earlier snapshot, so no change over time is shown.",
+      "Dates and targets are left for the counselor to set, and all text should be reviewed and edited before use."
+    ]
+  }
+}

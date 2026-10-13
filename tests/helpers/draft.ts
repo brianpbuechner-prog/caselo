@@ -45,6 +45,7 @@ export function recordedDrafts(): { file: string; sample: SampleName; model: str
 }
 
 const CAUSE = /\b(due to|because|likely|suggests?|suggesting|driven by|as a result( of)?|caused( by)?|attributable|stems? from|owing to|leads? to|contribut(es|ed|ing) to)\b/i
+const DATA_REASON = /\bbecause (it|they|this|that) (was|were|is|are) (only )?(checked|not checked|in the files|not in the files)[^.;]*/gi
 const INDIVIDUAL = /\b(a|one|the|this|that|each) (particular |individual |specific )?student\b(?! (count|population|body|group|outcome|support))|\bstudents? named\b|\btop \d+ students\b/i
 const GOAL = /^By \[date\], .+ will (increase|decrease) .+ from .+ to \[target set by counselor\]\.?$/
 
@@ -74,7 +75,9 @@ export function promptRuleProblems(draft: DraftContent, payload: string): string
   const misses = checkNumbers(text, allowedNumbers(payload))
   if (misses.length) problems.push(`numbers not in the summary: ${misses.map((m) => m.text).join(', ')}`)
 
-  const cause = text.match(CAUSE)
+  // "because" is allowed only when it explains what data was in the files
+  // ("not compared because it was checked only in Q2"), not a result.
+  const cause = text.replace(DATA_REASON, '').match(CAUSE)
   if (cause) problems.push(`gives a cause: "${cause[0]}"`)
 
   const individual = text.match(INDIVIDUAL)

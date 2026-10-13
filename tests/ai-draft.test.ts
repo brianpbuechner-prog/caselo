@@ -145,6 +145,11 @@ describe('prompt rule checker', () => {
     expect(bad((d) => (d.narrative += ' Attendance rose, likely due to winter illness.')).join()).toMatch(/cause/)
   })
 
+  test('allows "because" only for what was in the files', () => {
+    expect(bad((d) => (d.narrative += ' Behavior was not compared because it was checked only in Q2.')).join()).not.toMatch(/cause/)
+    expect(bad((d) => (d.narrative += ' Attendance rose because students were sick.')).join()).toMatch(/cause/)
+  })
+
   test('catches an individual student', () => {
     expect(bad((d) => (d.narrative += ' One student in grade 9 was flagged in all three areas.')).join()).toMatch(/individual/)
     expect(bad((d) => (d.narrative += ' Riley Duarte was flagged for attendance.')).join()).toMatch(/names students/)

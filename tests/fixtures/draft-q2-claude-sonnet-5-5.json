@@ -1,0 +1,30 @@
+{
+  "model": "claude-sonnet-5-5",
+  "draft": {
+    "narrative": "The Q2 snapshot includes 301 students, with attendance, academics, and behavior all checked. In Q2, 204 students (68%) were in Tier 1, 66 (22%) in Tier 2, and 31 (10%) in Tier 3. Attendance flagged 69 students (23%), academics 42 (14%), and behavior 21 (7%). 25 students (8%) were flagged in both attendance and academics; fewer than 10 were flagged in both attendance and behavior, and fewer than 10 in both academics and behavior. Among the 295 students in both Q1 and Q2, attendance flags were 23% in Q2, up from 21% in Q1, and academics flags were 14% in Q2, up from 12% in Q1. Behavior was not compared. 10 students were newly flagged for attendance, and fewer than 10 were newly flagged for academics. 17 students moved to a higher tier, and fewer than 10 moved to a lower tier. By grade, attendance flags were 28% in grade 9, 25% in grade 10, 14% in grade 11, and 24% in grade 12. Academics flags were 18% in grade 9 and 16% in grade 12. Academics for grade 10 was not shown, to protect small counts, and for grade 11 it was fewer than 10.",
+    "goals": [
+      {
+        "area": "attendance",
+        "statement": "By [date], all students will decrease the percentage flagged for chronic absence (missing 10% or more of scheduled days) from 23% to [target set by counselor].",
+        "baseline": "Attendance, Q2: 69 students flagged, 23% of 301"
+      },
+      {
+        "area": "academics",
+        "statement": "By [date], all students will decrease the percentage flagged for academics (unweighted GPA below 2.00, or 1 or more failing course grade) from 14% to [target set by counselor].",
+        "baseline": "Academics, Q2: 42 students flagged, 14% of 301"
+      },
+      {
+        "area": "overall",
+        "statement": "By [date], all students will increase the percentage in Tier 1 (no flags) from 68% to [target set by counselor].",
+        "baseline": "Tiers, Q2: 204 students in Tier 1, 68% of 301"
+      }
+    ],
+    "caveats": [
+      "Counts marked fewer than 10 or not shown are unknown, and this draft does not estimate them.",
+      "Change from Q1 to Q2 counts only the 295 students in both snapshots, and behavior was not compared because it was checked only in Q2.",
+      "Flags follow the rules in the files: chronic absence at 10% or more of scheduled days, GPA below 2.00 or a failing course grade, and 3 or more behavior incidents.",
+      "Tiers are assigned by the number of flags (Tier 1: none, Tier 2: 1 or more, Tier 3: 2 or more), so tier counts depend on those rules.",
+      "This draft describes counts only and gives no reasons for them; edit the narrative and goals and set dates and targets before use."
+    ]
+  }
+}
