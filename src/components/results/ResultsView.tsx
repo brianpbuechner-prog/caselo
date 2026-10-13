@@ -2,12 +2,17 @@
 // role-based "start here" section, then patterns, then every student.
 // "Download PDF" prints the de-identified summary (no names) unless the
 // counselor chooses to include names, which prints this page instead.
+// The optional AI draft (Phase 3) sits in a collapsed section beside
+// Download PDF and reads only the de-identified summary.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Thresholds } from '../../config/rules'
+import type { DraftState } from '../../lib/ai/types'
 import { analyze } from '../../lib/compare/analyze'
 import type { Snapshot } from '../../lib/model'
 import { getRole, ROLES } from '../../lib/roles/roles'
+import { buildSummary } from '../../lib/summary/build'
+import { AiDraftPanel, DraftPrint } from './AiDraft'
 import { Brief } from './Brief'
 import { Patterns } from './Patterns'
 import { StudentDetail } from './StudentDetail'
@@ -28,6 +33,8 @@ export function ResultsView({
   onFiles,
   onClear,
   onAbout,
+  draft,
+  onDraft,
 }: {
   snapshots: Snapshot[]
   warnings: string[]
@@ -40,8 +47,14 @@ export function ResultsView({
   onFiles: () => void
   onClear: () => void
   onAbout: () => void
+  draft: DraftState | null
+  onDraft: (d: DraftState) => void
 }) {
   const results = useMemo(() => analyze(snapshots, thresholds), [snapshots, thresholds])
+  const summary = useMemo(() => buildSummary(results, thresholds), [results, thresholds])
+  const [aiOpen, setAiOpen] = useState(draft !== null)
+  const [withDraft, setWithDraft] = useState(true)
+  const printDraft = draft !== null && withDraft ? draft : null
   const [filter, setFilter] = useState<ListFilter>(DEFAULT_FILTER)
   const [panel, setPanel] = useState(false)
   const [withNames, setWithNames] = useState(false)
@@ -112,9 +125,18 @@ export function ResultsView({
           </div>
         </div>
       </header>
-      <SummaryReport results={results} thresholds={thresholds} />
+      <SummaryReport results={results} summary={summary} draft={printDraft} />
       <main className="page results-page">
         <div className="pdf-bar no-print">
+          <button className="btn ghost sm ai-toggle" aria-expanded={aiOpen} onClick={() => setAiOpen((v) => !v)}>
+            <span aria-hidden="true">{aiOpen ? '▾' : '▸'}</span> AI draft narrative and goals
+          </button>
+          {draft && (
+            <label className="small muted pdf-names">
+              <input type="checkbox" checked={withDraft} onChange={(e) => setWithDraft(e.target.checked)} />
+              Include draft narrative and goals
+            </label>
+          )}
           <label className="small muted pdf-names">
             <input type="checkbox" checked={withNames} onChange={(e) => setWithNames(e.target.checked)} />
             Include student names
@@ -123,6 +145,7 @@ export function ResultsView({
             Download PDF
           </button>
         </div>
+        {aiOpen && <AiDraftPanel summary={summary} state={draft} onState={onDraft} />}
         <p className="names-note">Contains student names. Share only with staff who need it.</p>
         <MissingLine results={results} warnings={warnings} />
         <div className="top">
@@ -134,6 +157,7 @@ export function ResultsView({
           <h2 className="h2">All students</h2>
           <StudentList results={results} filter={filter} onFilter={onFilter} compact={compact} onOpenStudent={setOpenKey} />
         </div>
+        {printDraft && <DraftPrint state={printDraft} />}
       </main>
       {open && <StudentDetail student={open} results={results} thresholds={thresholds} onClose={() => setOpenKey(null)} />}
       {panel && (

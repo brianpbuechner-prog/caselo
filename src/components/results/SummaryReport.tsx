@@ -3,14 +3,17 @@
 // it is what "Download PDF" prints by default, and what the browser prints
 // if someone prints the results page directly, so names never leave by
 // accident. Printing names is a separate, explicit choice (ResultsView).
+// When an AI draft exists and the counselor leaves it ticked, it prints at
+// the end under the AI draft label.
 
-import { useMemo, useState } from 'react'
-import type { Thresholds } from '../../config/rules'
+import { useState } from 'react'
+import type { DraftState } from '../../lib/ai/types'
 import type { Results } from '../../lib/compare/analyze'
 import { areaPhrase } from '../../lib/compare/insights'
 import { RULE_LABELS, type RuleCategory } from '../../lib/rules/engine'
-import { buildSummary, TIERS } from '../../lib/summary/build'
+import { TIERS, type DeidentifiedSummary } from '../../lib/summary/build'
 import { cellText, MIN_CELL, rateText, type Cell } from '../../lib/summary/suppress'
+import { DraftPrint } from './AiDraft'
 
 const list = (cats: RuleCategory[]) => cats.map((c) => RULE_LABELS[c].toLowerCase()).join(' and ')
 
@@ -33,8 +36,7 @@ function RateChange({ before, after }: { before: Cell; after: Cell }) {
   return <>{`${cellText(before)} → ${cellText(after)}`}</>
 }
 
-export function SummaryReport({ results, thresholds }: { results: Results; thresholds: Thresholds }) {
-  const s = useMemo(() => buildSummary(results, thresholds), [results, thresholds])
+export function SummaryReport({ results, summary: s, draft }: { results: Results; summary: DeidentifiedSummary; draft: DraftState | null }) {
   const [today] = useState(() => new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }))
 
   const allTiersShown = TIERS.every((k) => s.tiers[k].kind === 'shown')
@@ -176,6 +178,8 @@ export function SummaryReport({ results, thresholds }: { results: Results; thres
             <p className="small muted">* Hidden so a count under {MIN_CELL} in the same row or column can't be worked out by subtraction from the totals.</p>
           )}
         </section>
+
+        {draft && <DraftPrint state={draft} />}
 
         <footer className="report-foot small muted">
           <span>

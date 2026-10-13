@@ -8,6 +8,7 @@ import { FileReview, fileProblems } from './components/FileReview'
 import { Landing } from './components/Landing'
 import { ResultsView } from './components/results/ResultsView'
 import type { Thresholds } from './config/rules'
+import type { DraftState } from './lib/ai/types'
 import { browserRunner, shutdown, warmUp } from './lib/db/browser'
 import { loadSamples, readFile, readPasted } from './lib/files/read'
 import { buildSnapshots } from './lib/grouping/snapshots'
@@ -23,6 +24,8 @@ export default function App() {
   const [stage, setStage] = useState<Stage>('landing')
   const [files, setFiles] = useState<UploadedFile[]>([])
   const [analysis, setAnalysis] = useState<{ snapshots: Snapshot[]; warnings: string[] } | null>(null)
+  // The AI draft, if one was requested. Memory only; Clear data discards it.
+  const [draft, setDraft] = useState<DraftState | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [about, setAbout] = useState(false)
@@ -115,6 +118,7 @@ export default function App() {
   const clear = useCallback(() => {
     setFiles([])
     setAnalysis(null)
+    setDraft(null)
     setError(null)
     setStage('landing')
     void shutdown()
@@ -162,6 +166,8 @@ export default function App() {
           onFiles={() => setStage('review')}
           onClear={clear}
           onAbout={() => setAbout(true)}
+          draft={draft}
+          onDraft={setDraft}
         />
       )}
       <Footer onAbout={() => setAbout(true)} />
