@@ -1,8 +1,9 @@
 // The results page. One page, read top to bottom: the summary and a short
-// role-based "start here" section, then patterns, then every student. The
-// de-identified summary (counts only, for sharing) is a second view.
+// role-based "start here" section, then patterns, then every student.
+// "Download PDF" prints the de-identified summary (no names) unless the
+// counselor chooses to include names, which prints this page instead.
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Thresholds } from '../../config/rules'
 import { analyze } from '../../lib/compare/analyze'
 import type { Snapshot } from '../../lib/model'
@@ -43,7 +44,20 @@ export function ResultsView({
   const results = useMemo(() => analyze(snapshots, thresholds), [snapshots, thresholds])
   const [filter, setFilter] = useState<ListFilter>(DEFAULT_FILTER)
   const [panel, setPanel] = useState(false)
-  const [view, setView] = useState<'students' | 'summary'>('students')
+  const [withNames, setWithNames] = useState(false)
+
+  // Printing with names is opt-in for one print only. Any other print,
+  // including the browser's own Print command, gets the no-names summary.
+  useEffect(() => {
+    const reset = () => delete document.body.dataset.print
+    window.addEventListener('afterprint', reset)
+    return () => window.removeEventListener('afterprint', reset)
+  }, [])
+  const downloadPdf = () => {
+    if (withNames) document.body.dataset.print = 'full'
+    else delete document.body.dataset.print
+    window.print()
+  }
   const [openKey, setOpenKey] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const onFilter = (f: Partial<ListFilter>) => setFilter((cur) => ({ ...cur, ...f }))
@@ -86,17 +100,6 @@ export function ResultsView({
                 </select>
               </label>
             )}
-            <button
-              className="btn ghost sm"
-              onClick={() => {
-                setView(view === 'summary' ? 'students' : 'summary')
-                window.scrollTo(0, 0)
-              }}
-              aria-pressed={view === 'summary'}
-              title="Counts and rates only, with no names, for sharing"
-            >
-              {view === 'summary' ? 'Students' : 'Shareable summary'}
-            </button>
             <button className="btn ghost sm" onClick={() => setPanel(true)}>
               Rules
             </button>
@@ -109,8 +112,18 @@ export function ResultsView({
           </div>
         </div>
       </header>
-      {view === 'summary' && <SummaryReport results={results} thresholds={thresholds} onBack={() => setView('students')} />}
-      <main className="page" hidden={view === 'summary'}>
+      <SummaryReport results={results} thresholds={thresholds} />
+      <main className="page results-page">
+        <div className="pdf-bar no-print">
+          <label className="small muted pdf-names">
+            <input type="checkbox" checked={withNames} onChange={(e) => setWithNames(e.target.checked)} />
+            Include student names
+          </label>
+          <button className="btn sm" onClick={downloadPdf} title={withNames ? 'This page, with names and the student list' : 'Counts and rates only, with no names. Safe to share.'}>
+            Download PDF
+          </button>
+        </div>
+        <p className="names-note">Contains student names. Share only with staff who need it.</p>
         <MissingLine results={results} warnings={warnings} />
         <div className="top">
           <Summary results={results} filter={filter} onShowStudents={showStudents} />

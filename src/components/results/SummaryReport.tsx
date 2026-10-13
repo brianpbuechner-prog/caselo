@@ -1,7 +1,8 @@
-// The de-identified summary page (Phase 2). Counts and rates only, with
-// small-cell suppression applied in lib/summary. Meant to be shared: a
-// counselor can print it or save it as a PDF from the browser's print dialog.
-// The school name is typed here, kept in memory only, and never saved.
+// The de-identified summary (Phase 2). Counts and rates only, with
+// small-cell suppression applied in lib/summary. It is not shown on screen:
+// it is what "Download PDF" prints by default, and what the browser prints
+// if someone prints the results page directly, so names never leave by
+// accident. Printing names is a separate, explicit choice (ResultsView).
 
 import { useMemo, useState } from 'react'
 import type { Thresholds } from '../../config/rules'
@@ -32,9 +33,8 @@ function RateChange({ before, after }: { before: Cell; after: Cell }) {
   return <>{`${cellText(before)} → ${cellText(after)}`}</>
 }
 
-export function SummaryReport({ results, thresholds, onBack }: { results: Results; thresholds: Thresholds; onBack: () => void }) {
+export function SummaryReport({ results, thresholds }: { results: Results; thresholds: Thresholds }) {
   const s = useMemo(() => buildSummary(results, thresholds), [results, thresholds])
-  const [school, setSchool] = useState('')
   const [today] = useState(() => new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }))
 
   const allTiersShown = TIERS.every((k) => s.tiers[k].kind === 'shown')
@@ -43,23 +43,9 @@ export function SummaryReport({ results, thresholds, onBack }: { results: Result
   const labelsUsed = results.labels.join(' and ')
 
   return (
-    <main className="page report-page">
-      <div className="report-tools no-print">
-        <button className="btn" onClick={onBack}>
-          Back to students
-        </button>
-        <label className="field">
-          School name (optional, not saved)
-          <input type="text" value={school} onChange={(e) => setSchool(e.target.value)} maxLength={80} autoComplete="off" spellCheck={false} style={{ width: 260 }} />
-        </label>
-        <button className="btn primary" onClick={() => window.print()} style={{ marginLeft: 'auto' }}>
-          Download PDF
-        </button>
-      </div>
-
-      <article className="report card" aria-label="De-identified summary">
+      <article className="report print-only" aria-label="De-identified summary">
         <header className="report-head">
-          <span className="report-eyebrow">{[school.trim(), today].filter(Boolean).join(' · ')}</span>
+          <span className="report-eyebrow">{today}</span>
           <h1 className="report-title">Student support summary, {s.label}</h1>
           <p className="muted num">
             {cellText(s.students)} students{s.change ? `, compared with ${s.change.from}` : ''}. Counts and rates only: no names or student IDs. Counts
@@ -200,6 +186,5 @@ export function SummaryReport({ results, thresholds, onBack }: { results: Result
           </span>
         </footer>
       </article>
-    </main>
   )
 }
