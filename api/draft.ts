@@ -16,7 +16,9 @@ import { readFileSync } from 'node:fs'
 import { checkSummary, DRAFT_JSON_SCHEMA, MAX_BODY_BYTES, parseDraftContent } from '../src/lib/ai/validate.js'
 
 export const DEFAULT_MODEL = 'claude-sonnet-5-5'
-export const MAX_TOKENS = 2000
+// Covers the draft plus any thinking the model does first. Billing is for
+// tokens used, not this cap.
+export const MAX_TOKENS = 8000
 const API_URL = 'https://api.anthropic.com/v1/messages'
 const TIMEOUT_MS = 50_000
 
@@ -100,9 +102,12 @@ export async function handleDraft(request: Request, env: DraftEnv, fetchImpl: ty
     model?: unknown
     stop_reason?: unknown
     content?: { type?: unknown; text?: unknown }[]
+    usage?: { output_tokens?: unknown }
   } | null
   if (result?.stop_reason !== 'end_turn') {
-    console.error(`draft: stop_reason ${String(result?.stop_reason)}`)
+    // Counts and block types only, never content.
+    const blocks = (result?.content ?? []).map((b) => String(b.type)).join(',')
+    console.error(`draft: stop_reason ${String(result?.stop_reason)} output_tokens ${String(result?.usage?.output_tokens)} blocks ${blocks}`)
     return error(502, 'The model did not finish the draft. Try again.')
   }
   const text = result.content?.find((b) => b.type === 'text')?.text
