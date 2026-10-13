@@ -369,8 +369,6 @@ tr.calm .student-name { color: var(--text); font-weight: 400; }
 }
 
 /* De-identified summary (Phase 2) */
-.report-page { padding-top: 24px; padding-bottom: 48px; }
-.report-tools { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-bottom: 16px; }
 .report { padding: 40px; display: grid; gap: 36px; max-width: 1040px; margin: 0 auto; }
 .report-head { display: grid; gap: 6px; }
 .report-head p { max-width: 640px; }
@@ -408,16 +406,23 @@ tr.calm .student-name { color: var(--text); font-weight: 400; }
   .report-title { font-size: 26px; }
   .report-area { grid-template-columns: 90px 1fr 76px; }
 }
+/* Print: the no-names summary unless names were chosen for this print. */
+.print-only { display: none; }
+.names-note { display: none; }
+.pdf-bar { display: flex; justify-content: flex-end; align-items: center; gap: 14px; flex-wrap: wrap; padding-top: 14px; }
+.pdf-names { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; min-height: 36px; }
+.pdf-names input { width: 16px; height: 16px; accent-color: var(--text); }
 @media print {
-  .topbar, .footer, .no-print { display: none !important; }
+  .topbar, .footer, .no-print, .scrim, [role="dialog"] { display: none !important; }
   body { background: #fff; }
-  .report-page { padding: 0; max-width: none; }
-  .report { box-shadow: none; border: none; padding: 0; max-width: none; }
-  .report-block, .report-table { break-inside: avoid; }
-  .report { gap: 22px; font-size: 13px; }
+  body:not([data-print="full"]) .results-page { display: none !important; }
+  body:not([data-print="full"]) .report.print-only { display: grid !important; }
+  body[data-print="full"] .names-note { display: block; font-weight: 600; margin: 0 0 12px; }
+  .report { box-shadow: none; border: none; padding: 0; max-width: none; gap: 22px; font-size: 13px; }
   .report-title { font-size: 26px; }
   .report-grid { gap: 24px; }
   .report-block { gap: 10px; }
+  .report-block, .report-table { break-inside: avoid; }
   .report-tiers .big { font-size: 22px; }
   .report-change { padding: 10px 14px; }
   .report-change .mid { font-size: 18px; }

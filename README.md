@@ -47,9 +47,11 @@ Live site: https://caselo.org
   names or IDs. It covers tiers, students flagged by area, change since the
   last snapshot, and a grade-level table. Counts under 10 show as "<10", and
   a second count is hidden ("*") wherever a small one could otherwise be
-  worked out by subtraction from a total. It prints to one page and saves as
-  a PDF from the browser's print dialog. An optional school name can be
-  typed in; it is not saved.
+  worked out by subtraction from a total. "Download PDF" on the results page
+  saves it as a one-page PDF through the browser's print dialog. Printing
+  the results page any other way also gets this no-names summary. Ticking
+  "Include student names" before downloading prints the full results page
+  and student list instead, marked as containing names.
 
 ## Privacy model
 
