@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { DELIMITERS, delimiterLabel, type Delimiter } from '../lib/files/delimiter'
-import { withDelimiter } from '../lib/files/read'
+import { withDelimiter, withSheet } from '../lib/files/read'
 import { labelOrder } from '../lib/grouping/snapshots'
 import { presentCategories, studentKeyField } from '../lib/mapping/detect'
 import type { UploadedFile } from '../lib/model'
@@ -74,7 +74,10 @@ export function FileReview({
                 <div className="file-row">
                   <span className="file-name">{f.fileName}</span>
                   <span className="small muted">
-                    {f.headers.length} columns, {delimiterLabel(f.delimiter).toLowerCase()} delimited
+                    {f.headers.length} columns,{' '}
+                    {f.sheet ? `sheet "${f.sheet}"` : `${delimiterLabel(f.delimiter).toLowerCase()} delimited`}, header row on
+                    line {f.headerLine + 1}
+                    {f.headerLine > 0 && ' (lines above it are skipped)'}
                   </span>
                   <span style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
                     <button className="btn ghost sm" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up" title="Move up">
@@ -100,19 +103,37 @@ export function FileReview({
                       style={{ width: 140 }}
                     />
                   </label>
-                  <label className="field">
-                    Delimiter
-                    <select
-                      value={f.delimiter}
-                      onChange={(e) => onChange(files.map((x) => (x.id === f.id ? withDelimiter(x, e.target.value as Delimiter, catalog) : x)))}
-                    >
-                      {DELIMITERS.map((d) => (
-                        <option key={d.value} value={d.value}>
-                          {d.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  {f.sheets ? (
+                    f.sheets.length > 1 && (
+                      <label className="field">
+                        Sheet
+                        <select
+                          value={f.sheet}
+                          onChange={(e) => onChange(files.map((x) => (x.id === f.id ? withSheet(x, e.target.value, catalog) : x)))}
+                        >
+                          {f.sheets.map((sh) => (
+                            <option key={sh.name} value={sh.name}>
+                              {sh.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )
+                  ) : (
+                    <label className="field">
+                      Delimiter
+                      <select
+                        value={f.delimiter}
+                        onChange={(e) => onChange(files.map((x) => (x.id === f.id ? withDelimiter(x, e.target.value as Delimiter, catalog) : x)))}
+                      >
+                        {DELIMITERS.map((d) => (
+                          <option key={d.value} value={d.value}>
+                            {d.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
                   <div className="field">
                     Data found
                     <div className="chips" style={{ minHeight: 36, alignItems: 'center' }}>

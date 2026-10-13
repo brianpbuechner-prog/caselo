@@ -9,7 +9,7 @@ import { Landing } from './components/Landing'
 import { ResultsView } from './components/results/ResultsView'
 import type { Thresholds } from './config/rules'
 import { browserRunner, shutdown, warmUp } from './lib/db/browser'
-import { loadSamples, readFile } from './lib/files/read'
+import { loadSamples, readFile, readPasted } from './lib/files/read'
 import { buildSnapshots } from './lib/grouping/snapshots'
 import type { Snapshot, UploadedFile } from './lib/model'
 import { loadPreferences, savePreferences, type Preferences } from './lib/preferences'
@@ -59,6 +59,29 @@ export default function App() {
     [files.length],
   )
 
+  const addPasted = useCallback(
+    (text: string, label: string): boolean => {
+      setError(null)
+      if (files.length >= MAX_FILES) {
+        setError(`Caselo reads up to ${MAX_FILES} files at a time. Remove a file first.`)
+        return false
+      }
+      const pastes = files.filter((f) => f.fileName.startsWith('Pasted text')).length
+      try {
+        const name = pastes ? `Pasted text ${pastes + 1}` : 'Pasted text'
+        const upload = readPasted(text, catalog, label || `Snapshot ${files.length + 1}`, name)
+        warmUp()
+        setFiles((cur) => [...cur, upload])
+        setStage('review')
+        return true
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'The pasted text could not be read.')
+        return false
+      }
+    },
+    [files],
+  )
+
   const run = useCallback(async (list: UploadedFile[]) => {
     setError(null)
     setBusy('Analyzing in your browser')
@@ -101,7 +124,7 @@ export default function App() {
 
   return (
     <div className={stage === 'landing' ? 'landing' : undefined}>
-      {stage === 'landing' && <Landing onFiles={addFiles} onSample={trySample} busy={busy} error={error} />}
+      {stage === 'landing' && <Landing onFiles={addFiles} onPaste={addPasted} onSample={trySample} busy={busy} error={error} />}
       {stage === 'review' && (
         <>
           <header className="topbar">

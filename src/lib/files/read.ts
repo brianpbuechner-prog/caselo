@@ -1,11 +1,13 @@
 // Turn a chosen file into an UploadedFile: decode, detect delimiter, read
-// headers, and auto-map columns. Runs entirely in the browser.
+// headers, and auto-map columns. Spreadsheets are converted to CSV text
+// first and then take the same path. Runs entirely in the browser.
 
-import { autoMap } from '../mapping/detect'
+import { autoMap, type ColumnMapping } from '../mapping/detect'
 import type { UploadedFile } from '../model'
 import type { SisCatalog } from '../sis/types'
 import { decodeText, rejectReason } from './decode'
-import { detectDelimiter, readHeaders, type Delimiter } from './delimiter'
+import { detectDelimiter, detectHeaderRow, readHeaders, type Delimiter } from './delimiter'
+import { isSpreadsheet, readWorkbook, type SheetText } from './workbook'
 
 let counter = 0
 const nextId = () => `f${++counter}`
@@ -22,25 +24,65 @@ export function guessLabel(fileName: string): string | null {
   return v.length <= 4 ? v.toUpperCase() : v[0].toUpperCase() + v.slice(1).toLowerCase()
 }
 
+const matchedCount = (m: ColumnMapping) => Object.values(m).filter((x) => x.index != null).length
+
+/** Header row, header names, and auto-mapping for text with a known delimiter. */
+function readLayout(text: string, delimiter: Delimiter, catalog: SisCatalog) {
+  const headerLine = detectHeaderRow(text, delimiter, (h) => matchedCount(autoMap(h, catalog)))
+  const headers = readHeaders(text, delimiter, headerLine)
+  return { delimiter, headerLine, headers, mapping: autoMap(headers, catalog) }
+}
+
 export function buildUpload(fileName: string, text: string, catalog: SisCatalog, label: string, delimiter?: Delimiter): UploadedFile {
-  const d = delimiter ?? detectDelimiter(text)
-  const headers = readHeaders(text, d)
-  return { id: nextId(), fileName, label, text, delimiter: d, headers, mapping: autoMap(headers, catalog) }
+  return { id: nextId(), fileName, label, text, ...readLayout(text, delimiter ?? detectDelimiter(text), catalog) }
+}
+
+/** Build an upload from a workbook's sheets, using the first non-empty sheet. */
+export function buildWorkbookUpload(fileName: string, sheets: SheetText[], catalog: SisCatalog, label: string): UploadedFile {
+  const [first] = sheets
+  if (!first) throw new Error(`${fileName}: This spreadsheet has no data.`)
+  return { ...buildUpload(fileName, first.text, catalog, label, ','), sheets, sheet: first.name }
+}
+
+/** Switch a spreadsheet upload to another sheet. Keeps the label. */
+export function withSheet(f: UploadedFile, sheetName: string, catalog: SisCatalog): UploadedFile {
+  const sheet = f.sheets?.find((s) => s.name === sheetName)
+  if (!sheet) return f
+  const next = buildUpload(f.fileName, sheet.text, catalog, f.label, ',')
+  return { ...next, id: f.id, sheets: f.sheets, sheet: sheet.name }
 }
 
 export async function readFile(file: File, catalog: SisCatalog, fallbackLabel: string): Promise<UploadedFile> {
-  const early = rejectReason(file.name)
-  if (early) throw new Error(`${file.name}: ${early}`)
+  const label = guessLabel(file.name) ?? fallbackLabel
+  if (isSpreadsheet(file.name)) {
+    try {
+      return buildWorkbookUpload(file.name, await readWorkbook(await file.arrayBuffer()), catalog, label)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'could not be read.'
+      throw new Error(msg.startsWith(file.name) ? msg : `${file.name}: ${msg}`)
+    }
+  }
   const text = decodeText(await file.arrayBuffer())
-  const late = rejectReason(file.name, text)
-  if (late) throw new Error(`${file.name}: ${late}`)
-  return buildUpload(file.name, text, catalog, guessLabel(file.name) ?? fallbackLabel)
+  const problem = rejectReason(text)
+  if (problem) throw new Error(`${file.name}: ${problem}`)
+  return buildUpload(file.name, text, catalog, label)
+}
+
+/**
+ * Build an upload from text pasted into the page, for example cells copied
+ * from a spreadsheet (tab delimited) or lines copied from a CSV. Same
+ * delimiter detection and mapping as a file.
+ */
+export function readPasted(text: string, catalog: SisCatalog, label: string, name = 'Pasted text'): UploadedFile {
+  const clean = text.replace(/^\uFEFF/, '')
+  const problem = rejectReason(clean)
+  if (problem) throw new Error(problem.replace('This file', 'The pasted text'))
+  return buildUpload(name, clean, catalog, label.trim())
 }
 
 /** Re-read a file's headers with a different delimiter. */
 export function withDelimiter(f: UploadedFile, delimiter: Delimiter, catalog: SisCatalog): UploadedFile {
-  const headers = readHeaders(f.text, delimiter)
-  return { ...f, delimiter, headers, mapping: autoMap(headers, catalog) }
+  return { ...f, ...readLayout(f.text, delimiter, catalog) }
 }
 
 export const SAMPLE_FILES = [

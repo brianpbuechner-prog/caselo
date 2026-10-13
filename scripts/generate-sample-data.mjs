@@ -9,10 +9,12 @@
 //   ic-students-q2.csv       same students later in the year, with changed values
 //   ic-behavior-q2.csv       many rows per student: behavior incidents through Q2
 //   ic-students-renamed.tsv  Q1 data with district-style renamed headers, tab delimited
+//   ic-workbook-q1.xlsx      Excel workbook: an empty first sheet, Q1 students, Q2 behavior
 
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import * as XLSX from 'xlsx'
 
 const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'sample-data')
 const STUDENT_COUNT = 300
@@ -173,6 +175,16 @@ const q2Rows = students.filter((s) => s.inQ2).map((s) => studentRow(s, 'q2'))
 write('ic-students-q1.csv', STUDENT_HEADERS, q1Rows)
 write('ic-students-q2.csv', STUDENT_HEADERS, q2Rows)
 
+const BEHAVIOR_HEADERS = [
+  'student.studentNumber',
+  'student.lastName',
+  'student.firstName',
+  'student.grade',
+  'behaviorDetail.incidentID',
+  'behaviorDetail.incidentDate',
+  'behaviorDetail.resolutionCode',
+]
+
 // Behavior incidents, many rows per student. About 15% of incidents have a
 // second row for a second resolution, so counting must use distinct IDs.
 const behaviorRows = []
@@ -190,19 +202,7 @@ for (const s of students.filter((x) => x.inQ2)) {
     if (rand() < 0.15) behaviorRows.push([...base, pick(RESOLUTIONS.filter((r) => r !== first))])
   }
 }
-write(
-  'ic-behavior-q2.csv',
-  [
-    'student.studentNumber',
-    'student.lastName',
-    'student.firstName',
-    'student.grade',
-    'behaviorDetail.incidentID',
-    'behaviorDetail.incidentDate',
-    'behaviorDetail.resolutionCode',
-  ],
-  behaviorRows,
-)
+write('ic-behavior-q2.csv', BEHAVIOR_HEADERS, behaviorRows)
 
 // Q1 again with renamed headers, Y/N flags, extra columns, tab delimited.
 const RENAMED = [
@@ -224,3 +224,18 @@ const renamedRows = q1Rows.map((r) => [
   r[0], r[1], r[2], r[3], r[4], pick(rooms), r[5], r[6], r[7], r[8] === 1 ? 'Y' : 'N', r[9], r[10],
 ])
 write('ic-students-renamed.tsv', RENAMED, renamedRows, '\t')
+
+// Excel workbook. The first sheet is empty, so the reader has to skip it.
+// IDs stay text (state IDs have leading zeros); measures are numbers, the
+// way a district would see them after opening an export in Excel.
+const asNumber = (v) => (v === '' || v == null ? null : Number(v))
+const xlsxStudents = q1Rows.map((r) => [r[0], r[1], r[2], r[3], Number(r[4]), ...r.slice(5).map(asNumber)])
+const wb = XLSX.utils.book_new()
+XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([]), 'Read me')
+XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([STUDENT_HEADERS, ...xlsxStudents]), 'Q1 students')
+XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([BEHAVIOR_HEADERS, ...behaviorRows]), 'Q2 behavior')
+// Fixed document dates so regenerating gives the same file.
+const fixed = new Date(Date.UTC(2026, 0, 1))
+wb.Props = { Title: 'Caselo synthetic sample', Author: 'Caselo', CreatedDate: fixed, ModifiedDate: fixed }
+writeFileSync(join(OUT_DIR, 'ic-workbook-q1.xlsx'), XLSX.write(wb, { type: 'buffer', bookType: 'xlsx', compression: true }))
+console.log(`ic-workbook-q1.xlsx: ${xlsxStudents.length} student rows, ${behaviorRows.length} behavior rows`)

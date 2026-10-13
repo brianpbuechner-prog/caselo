@@ -26,10 +26,15 @@ npm-debug.log*
 *.tsv
 *.xlsx
 *.xls
+*.xlsm
+*.ods
 *.CSV
 *.TSV
 *.XLSX
 *.XLS
+*.XLSM
+*.ODS
 !public/sample-data/
 !public/sample-data/*.csv
 !public/sample-data/*.tsv
+!public/sample-data/*.xlsx

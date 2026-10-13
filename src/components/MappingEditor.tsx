@@ -1,6 +1,6 @@
 import { Fragment, useRef, useState } from 'react'
 import { downloadText } from '../lib/export/csv'
-import { splitLine } from '../lib/files/delimiter'
+import { dataLines, splitLine } from '../lib/files/delimiter'
 import type { ColumnMapping, MatchMethod } from '../lib/mapping/detect'
 import { applyMappingJson, mappingToJson } from '../lib/mapping/json'
 import type { UploadedFile } from '../lib/model'
@@ -15,11 +15,9 @@ const METHOD_TEXT: Record<MatchMethod, string> = {
 
 /** First non-empty value in each column, to help confirm a match. */
 function examples(file: UploadedFile): string[] {
-  const lines = file.text.split('\n').slice(1, 30)
   const out: string[] = new Array(file.headers.length).fill('')
-  for (const line of lines) {
-    if (!line.trim()) continue
-    const cells = splitLine(line.replace(/\r$/, ''), file.delimiter)
+  for (const line of dataLines(file.text, file.headerLine, 30)) {
+    const cells = splitLine(line, file.delimiter)
     cells.forEach((c, i) => {
       if (i < out.length && !out[i] && c.trim()) out[i] = c.trim()
     })

@@ -56,9 +56,10 @@ describe('decoding', () => {
     expect(decodeText(bytes.buffer)).toBe(text)
   })
 
-  test('rejects spreadsheets and HTML with a plain reason', () => {
-    expect(rejectReason('export.xlsx')).toMatch(/Excel/)
-    expect(rejectReason('export.csv', '<html><body>')).toMatch(/HTML/)
-    expect(rejectReason('export.csv', 'a,b\n1,2')).toBeNull()
+  test('rejects HTML, binary, and empty text with a plain reason', () => {
+    expect(rejectReason('<html><body>')).toMatch(/HTML/)
+    expect(rejectReason('a\u0000b')).toMatch(/not look like text/)
+    expect(rejectReason('  \n')).toMatch(/empty/)
+    expect(rejectReason('a,b\n1,2')).toBeNull()
   })
 })

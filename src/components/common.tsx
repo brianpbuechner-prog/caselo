@@ -3,7 +3,7 @@ import { SAMPLE_DOWNLOADS } from '../lib/files/read'
 
 export const REPO_URL = 'https://github.com/brianpbuechner-prog/caselo'
 export const MAX_FILES = 4
-export const ACCEPT = '.csv,.txt,.tsv,.xlsx,.xls'
+export const ACCEPT = '.csv,.txt,.tsv,.xlsx,.xls,.xlsm,.ods'
 
 export function LockIcon() {
   return (
@@ -66,7 +66,7 @@ export function DropZone({
       {label ?? (
         <>
           <strong>Drop an Infinite Campus export here, or choose files</strong>
-          <span className="muted small">Up to {MAX_FILES} files. CSV or other delimited text.</span>
+          <span className="muted small">Up to {MAX_FILES} files. CSV, Excel, or other delimited text.</span>
         </>
       )}
       <input
