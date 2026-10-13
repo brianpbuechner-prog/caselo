@@ -1,5 +1,6 @@
 // The results page. One page, read top to bottom: the summary and a short
-// role-based "start here" section, then patterns, then every student.
+// role-based "start here" section, then patterns, then every student. The
+// de-identified summary (counts only, for sharing) is a second view.
 
 import { useMemo, useRef, useState } from 'react'
 import type { Thresholds } from '../../config/rules'
@@ -9,6 +10,7 @@ import { getRole, ROLES } from '../../lib/roles/roles'
 import { Brief } from './Brief'
 import { Patterns } from './Patterns'
 import { StudentDetail } from './StudentDetail'
+import { SummaryReport } from './SummaryReport'
 import { DEFAULT_FILTER, StudentList, type ListFilter } from './StudentList'
 import { MissingLine, Summary } from './Summary'
 import { ThresholdPanel } from './ThresholdPanel'
@@ -41,6 +43,7 @@ export function ResultsView({
   const results = useMemo(() => analyze(snapshots, thresholds), [snapshots, thresholds])
   const [filter, setFilter] = useState<ListFilter>(DEFAULT_FILTER)
   const [panel, setPanel] = useState(false)
+  const [view, setView] = useState<'students' | 'summary'>('students')
   const [openKey, setOpenKey] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const onFilter = (f: Partial<ListFilter>) => setFilter((cur) => ({ ...cur, ...f }))
@@ -83,6 +86,17 @@ export function ResultsView({
                 </select>
               </label>
             )}
+            <button
+              className="btn ghost sm"
+              onClick={() => {
+                setView(view === 'summary' ? 'students' : 'summary')
+                window.scrollTo(0, 0)
+              }}
+              aria-pressed={view === 'summary'}
+              title="Counts and rates only, with no names, for sharing"
+            >
+              {view === 'summary' ? 'Students' : 'Shareable summary'}
+            </button>
             <button className="btn ghost sm" onClick={() => setPanel(true)}>
               Rules
             </button>
@@ -95,7 +109,8 @@ export function ResultsView({
           </div>
         </div>
       </header>
-      <main className="page">
+      {view === 'summary' && <SummaryReport results={results} thresholds={thresholds} onBack={() => setView('students')} />}
+      <main className="page" hidden={view === 'summary'}>
         <MissingLine results={results} warnings={warnings} />
         <div className="top">
           <Summary results={results} filter={filter} onShowStudents={showStudents} />

@@ -43,6 +43,13 @@ Live site: https://caselo.org
   with no names.
 - Says clearly which categories were not in your files, and runs only the
   rules that apply.
+- Builds a shareable, de-identified summary: counts and rates only, with no
+  names or IDs. It covers tiers, students flagged by area, change since the
+  last snapshot, and a grade-level table. Counts under 10 show as "<10", and
+  a second count is hidden ("*") wherever a small one could otherwise be
+  worked out by subtraction from a total. It prints to one page and saves as
+  a PDF from the browser's print dialog. An optional school name can be
+  typed in; it is not saved.
 
 ## Privacy model
 
@@ -128,6 +135,7 @@ src/
     rules/engine.ts            flags, reasons, and tiers
     compare/analyze.ts         caseload summaries and change between snapshots
     compare/insights.ts        patterns: grade rates, overlap, distributions, start here
+    summary/                   de-identified summary and small-cell suppression
     export/csv.ts              results CSV
     roles/roles.ts             roles and what the start here section shows
     preferences.ts             saved settings (no student data)
@@ -159,11 +167,9 @@ thresholds in `src/config/rules.ts`.
 
 ## Later phases (planned, not built)
 
-- Phase 2: a de-identified summary with counts and rates only, no names or
-  IDs, and small-cell suppression (under 10 shown as "<10"). Planned home:
-  `src/lib/summary/`.
 - Phase 3: AI narrative and goal drafting from the Phase 2 summary only,
   aligned to the ASCA model. It will never rank or flag individual students.
+  Its only input will be the summary object from `src/lib/summary/build.ts`.
   The model call will sit behind one interface in `src/lib/ai/` so the key
   handling choice can change.
 - Phase 4: community context by zip code from the Census ACS API.
