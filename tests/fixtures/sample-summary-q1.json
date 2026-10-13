@@ -1,0 +1,215 @@
+{
+  "format": "caselo-summary",
+  "version": 1,
+  "label": "Q1",
+  "students": {
+    "kind": "shown",
+    "count": 300,
+    "rate": null
+  },
+  "rules": [
+    "attendance",
+    "academics"
+  ],
+  "missingRules": [
+    "behavior"
+  ],
+  "ruleText": [
+    "Chronic absence: missed 10% or more of scheduled days.",
+    "Academics: unweighted GPA below 2.00, or 1 or more failing course grade when course grades are in the file."
+  ],
+  "tierText": "Tier 1: no flags. Tier 2: 1 or more flag. Tier 3: 2 or more.",
+  "tiers": {
+    "1": {
+      "kind": "shown",
+      "count": 224,
+      "rate": 0.7466666666666667
+    },
+    "2": {
+      "kind": "shown",
+      "count": 53,
+      "rate": 0.17666666666666667
+    },
+    "3": {
+      "kind": "shown",
+      "count": 23,
+      "rate": 0.07666666666666666
+    }
+  },
+  "flagged": {
+    "attendance": {
+      "kind": "shown",
+      "count": 63,
+      "rate": 0.21
+    },
+    "academics": {
+      "kind": "shown",
+      "count": 36,
+      "rate": 0.12
+    }
+  },
+  "pairs": [
+    {
+      "categories": [
+        "attendance",
+        "academics"
+      ],
+      "cell": {
+        "kind": "shown",
+        "count": 23,
+        "rate": 0.07666666666666666
+      }
+    }
+  ],
+  "change": null,
+  "byGrade": [
+    {
+      "grade": "9",
+      "students": {
+        "kind": "shown",
+        "count": 78,
+        "rate": null
+      },
+      "tiers": {
+        "1": {
+          "kind": "shown",
+          "count": 54,
+          "rate": 0.6923076923076923
+        },
+        "2": {
+          "kind": "hidden",
+          "count": null,
+          "rate": null
+        },
+        "3": {
+          "kind": "small",
+          "count": null,
+          "rate": null
+        }
+      },
+      "flagged": {
+        "attendance": {
+          "kind": "shown",
+          "count": 20,
+          "rate": 0.2564102564102564
+        },
+        "academics": {
+          "kind": "shown",
+          "count": 13,
+          "rate": 0.16666666666666666
+        }
+      }
+    },
+    {
+      "grade": "10",
+      "students": {
+        "kind": "shown",
+        "count": 75,
+        "rate": null
+      },
+      "tiers": {
+        "1": {
+          "kind": "shown",
+          "count": 57,
+          "rate": 0.76
+        },
+        "2": {
+          "kind": "hidden",
+          "count": null,
+          "rate": null
+        },
+        "3": {
+          "kind": "small",
+          "count": null,
+          "rate": null
+        }
+      },
+      "flagged": {
+        "attendance": {
+          "kind": "hidden",
+          "count": null,
+          "rate": null
+        },
+        "academics": {
+          "kind": "small",
+          "count": null,
+          "rate": null
+        }
+      }
+    },
+    {
+      "grade": "11",
+      "students": {
+        "kind": "shown",
+        "count": 77,
+        "rate": null
+      },
+      "tiers": {
+        "1": {
+          "kind": "shown",
+          "count": 66,
+          "rate": 0.8571428571428571
+        },
+        "2": {
+          "kind": "small",
+          "count": null,
+          "rate": null
+        },
+        "3": {
+          "kind": "small",
+          "count": null,
+          "rate": null
+        }
+      },
+      "flagged": {
+        "attendance": {
+          "kind": "small",
+          "count": null,
+          "rate": null
+        },
+        "academics": {
+          "kind": "small",
+          "count": null,
+          "rate": null
+        }
+      }
+    },
+    {
+      "grade": "12",
+      "students": {
+        "kind": "shown",
+        "count": 70,
+        "rate": null
+      },
+      "tiers": {
+        "1": {
+          "kind": "shown",
+          "count": 47,
+          "rate": 0.6714285714285714
+        },
+        "2": {
+          "kind": "hidden",
+          "count": null,
+          "rate": null
+        },
+        "3": {
+          "kind": "small",
+          "count": null,
+          "rate": null
+        }
+      },
+      "flagged": {
+        "attendance": {
+          "kind": "shown",
+          "count": 19,
+          "rate": 0.2714285714285714
+        },
+        "academics": {
+          "kind": "shown",
+          "count": 10,
+          "rate": 0.14285714285714285
+        }
+      }
+    }
+  ]
+}
