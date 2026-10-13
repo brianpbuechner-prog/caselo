@@ -35,9 +35,9 @@ export async function sendPayload(payload: string, fetchImpl: typeof fetch = fet
     throw new DraftError(message)
   }
   const model = body && typeof body === 'object' && 'model' in body && typeof body.model === 'string' ? body.model : null
-  const parsed = parseDraftContent(body && typeof body === 'object' && 'draft' in body ? body.draft : null)
-  if (!model || !parsed.ok) throw new DraftError('The draft came back in an unexpected form. Try again.')
-  return { ...parsed.draft, model, createdAt: new Date().toISOString(), payload }
+  const draft = parseDraftContent(body && typeof body === 'object' && 'draft' in body ? body.draft : null)
+  if (!model || typeof draft === 'string') throw new DraftError('The draft came back in an unexpected form. Try again.')
+  return { ...draft, model, createdAt: new Date().toISOString(), payload }
 }
 
 export const draftFromSummary: DraftFromSummary = (summary) => sendPayload(payloadText(summary))

@@ -28,8 +28,6 @@ const RULE_TEXT: Record<string, RegExp> = {
 }
 const TIER_TEXT = /^Tier 1: (?:no flags|fewer than \d flags)\. Tier 2: \d or more flags?\. Tier 3: \d or more\.$/
 
-export type Check = { ok: true } | { ok: false; error: string }
-
 class Invalid extends Error {}
 
 function fail(path: string, what: string): never {
@@ -92,9 +90,10 @@ function tiers(v: unknown, path: string): void {
 /**
  * Accept only a Caselo de-identified summary (format "caselo-summary",
  * version 1) with exactly the fields buildSummary writes. Anything else,
- * including extra fields or counts under 10, is rejected.
+ * including extra fields or counts under 10, is rejected. Returns null when
+ * the summary passes, or a short reason when it does not.
  */
-export function checkSummary(value: unknown): Check {
+export function checkSummary(value: unknown): string | null {
   try {
     const s = keys(value, 'summary', [
       'format', 'version', 'label', 'students', 'rules', 'missingRules', 'ruleText', 'tierText',
@@ -152,9 +151,9 @@ export function checkSummary(value: unknown): Check {
       tiers(o.tiers, `${path}.tiers`)
       categoryCells(o.flagged, `${path}.flagged`, rules)
     })
-    return { ok: true }
+    return null
   } catch (e) {
-    if (e instanceof Invalid) return { ok: false, error: e.message }
+    if (e instanceof Invalid) return e.message
     throw e
   }
 }
@@ -211,8 +210,11 @@ function text(v: unknown, path: string): string {
   return v
 }
 
-/** Check the shape of a draft (from the model, or from the function's reply). */
-export function parseDraftContent(value: unknown): { ok: true; draft: DraftContent } | { ok: false; error: string } {
+/**
+ * Check the shape of a draft (from the model, or from the function's reply).
+ * Returns the draft, or a short reason as a string when the shape is wrong.
+ */
+export function parseDraftContent(value: unknown): DraftContent | string {
   try {
     const d = keys(value, 'draft', ['narrative', 'goals', 'caveats'])
     const goals = array(d.goals, 'draft.goals', 3).map((g, i) => {
@@ -221,9 +223,9 @@ export function parseDraftContent(value: unknown): { ok: true; draft: DraftConte
     })
     if (goals.length < 2) fail('draft.goals', 'expected 2 or 3 goals')
     const caveats = array(d.caveats, 'draft.caveats', 8).map((c, i) => text(c, `draft.caveats[${i}]`))
-    return { ok: true, draft: { narrative: text(d.narrative, 'draft.narrative'), goals, caveats } }
+    return { narrative: text(d.narrative, 'draft.narrative'), goals, caveats }
   } catch (e) {
-    if (e instanceof Invalid) return { ok: false, error: e.message }
+    if (e instanceof Invalid) return e.message
     throw e
   }
 }

@@ -55,10 +55,10 @@ describe('shared constants', () => {
 
 describe('summary schema', () => {
   test('accepts summaries built from the sample data', () => {
-    expect(checkSummary(summary)).toEqual({ ok: true })
-    expect(checkSummary(single)).toEqual({ ok: true })
+    expect(checkSummary(summary)).toBeNull()
+    expect(checkSummary(single)).toBeNull()
     expect(single.change).toBeNull()
-    expect(checkSummary(JSON.parse(payloadText(summary)))).toEqual({ ok: true })
+    expect(checkSummary(JSON.parse(payloadText(summary)))).toBeNull()
   })
 
   test('rejects anything that is not a version 1 Caselo summary', () => {
@@ -71,11 +71,11 @@ describe('summary schema', () => {
       ['plain text', () => 'Write me a poem'],
       ['null', () => null],
     ]
-    for (const [name, make] of cases) expect(checkSummary(make(clone())).ok, name).toBe(false)
+    for (const [name, make] of cases) expect(checkSummary(make(clone())), name).not.toBeNull()
   })
 
   test('rejects counts under 10, student-level fields, and free text', () => {
-    const tweak = (f: (s: any) => void) => { const s: any = clone(); f(s); return checkSummary(s) }
+    const tweak = (f: (s: any) => void) => { const s: any = clone(); f(s); return { ok: checkSummary(s) === null } }
     expect(tweak((s) => { s.tiers['3'] = { kind: 'shown', count: 4, rate: 0.01 } }).ok).toBe(false)
     expect(tweak((s) => { s.tiers['3'] = { kind: 'small', count: 4, rate: null } }).ok).toBe(false)
     expect(tweak((s) => { s.byGrade[0].students.name = 'Jordan' }).ok).toBe(false)

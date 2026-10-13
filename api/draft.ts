@@ -11,6 +11,7 @@
 //   DRAFT_MODEL        model name, default claude-sonnet-5-5
 //   DRAFT_DISABLED     set to 1 or true to turn the feature off (503)
 
+/// <reference types="node" />
 import { readFileSync } from 'node:fs'
 import { checkSummary, DRAFT_JSON_SCHEMA, MAX_BODY_BYTES, parseDraftContent } from '../src/lib/ai/validate.js'
 
@@ -62,8 +63,8 @@ export async function handleDraft(request: Request, env: DraftEnv, fetchImpl: ty
   } catch {
     return error(400, 'The request is not valid JSON.')
   }
-  const check = checkSummary(summary)
-  if (!check.ok) return error(400, `Only a Caselo summary can be sent. ${check.error}.`)
+  const problem = checkSummary(summary)
+  if (problem !== null) return error(400, `Only a Caselo summary can be sent. ${problem}.`)
 
   const key = env.ANTHROPIC_API_KEY
   if (!key) return error(503, 'The AI draft is not set up on this server.')
@@ -111,12 +112,12 @@ export async function handleDraft(request: Request, env: DraftEnv, fetchImpl: ty
   } catch {
     content = null
   }
-  const parsed = parseDraftContent(content)
-  if (!parsed.ok) {
+  const draft = parseDraftContent(content)
+  if (typeof draft === 'string') {
     console.error('draft: response did not match the draft format')
     return error(502, 'The draft came back in an unexpected form. Try again.')
   }
-  return reply(200, { model: typeof result.model === 'string' ? result.model : model, draft: parsed.draft })
+  return reply(200, { model: typeof result.model === 'string' ? result.model : model, draft })
 }
 
 export function POST(request: Request): Promise<Response> {
