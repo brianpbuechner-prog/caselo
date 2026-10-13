@@ -3,6 +3,9 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/draft.ts": { "maxDuration": 60, "includeFiles": "src/lib/ai/prompt.md" }
+  },
   "headers": [
     {
       "source": "/(.*)",

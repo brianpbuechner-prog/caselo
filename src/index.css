@@ -431,3 +431,31 @@ tr.calm .student-name { color: var(--text); font-weight: 400; }
   .report-foot { padding-top: 12px; }
   .report-bar .seg, .report-area .meter span, .report-change { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* AI draft (Phase 3) */
+.pdf-bar .ai-toggle { margin-right: auto; color: var(--text); }
+.ai { display: grid; gap: 14px; margin-top: 12px; padding: 18px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--subtle); }
+.ai-intro { max-width: 720px; }
+.ai-preview { display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; }
+.ai-json {
+  margin: 0; max-height: 320px; overflow: auto; padding: 10px 12px; background: var(--subtle);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font: 12.5px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre;
+}
+.ai-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.ai-output { display: grid; gap: 10px; }
+.ai-output .section-head { margin-bottom: 0; }
+.ai-text {
+  width: 100%; min-height: 280px; resize: vertical; padding: 12px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font-family: inherit; font-size: 14px; line-height: 1.55;
+}
+.ai-text:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+.ai-check { border: 1px solid #e3b4ae; background: #fbefed; color: var(--text); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 14px; display: grid; gap: 6px; }
+.ai-check ul { margin: 0; padding-left: 18px; }
+.ai-check mark { background: #f3c9c3; color: var(--danger); font-weight: 600; padding: 0 2px; border-radius: 3px; }
+.draft-print { display: none; }
+.draft-text { white-space: pre-wrap; }
+@media print {
+  .draft-print { display: grid; break-inside: auto; }
+  .results-page > .draft-print { margin-top: 24px; }
+}
