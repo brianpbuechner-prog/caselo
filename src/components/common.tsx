@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { PROMPT_URL } from '../lib/ai/client'
 import { SAMPLE_DOWNLOADS } from '../lib/files/read'
 
 export const REPO_URL = 'https://github.com/brianpbuechner-prog/caselo'
@@ -109,9 +110,16 @@ export function About({ onClose }: { onClose: () => void }) {
         system export and shows which students may need support, with the reason for each flag.
       </p>
       <p>
-        <strong>How your data is handled.</strong> Caselo has no server, database, or accounts. Files are read in this
-        browser tab and held in memory. Nothing from a file is saved to this computer or sent anywhere. Refreshing or
-        closing the tab clears it. Rule settings you change are saved in this browser; they contain no student data.
+        <strong>How your data is handled.</strong> Caselo has no database or accounts. Files are read in this browser
+        tab and held in memory. Nothing from a file is saved to this computer or sent anywhere. Refreshing or closing
+        the tab clears it. Rule settings you change are saved in this browser; they contain no student data.
+      </p>
+      <p>
+        <strong>AI draft.</strong> Student data never leaves the browser. One optional feature, the AI draft, sends a de-identified summary (counts and rates only, no names, IDs, or individual values, small counts already hidden) to caselo.org, which forwards it to Anthropic's API and returns a draft. You see the exact data before it is sent, and nothing is sent unless you choose to. caselo.org does not store or log the summary or the draft. Anthropic's terms state that API data is not used to train models, and Anthropic deletes API inputs and outputs within 30 days. The instructions sent with the summary are public: {' '}
+        <a href={PROMPT_URL} target="_blank" rel="noreferrer">
+          the instructions
+        </a>
+        .
       </p>
       <p>
         <strong>Supported exports.</strong> Infinite Campus Ad Hoc exports from Filter Designer, Query Wizard, or Data

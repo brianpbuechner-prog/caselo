@@ -52,12 +52,21 @@ Live site: https://caselo.org
   the results page any other way also gets this no-names summary. Ticking
   "Include student names" before downloading prints the full results page
   and student list instead, marked as containing names.
+- Optional AI draft: a first draft of a short narrative and 2 or 3 goals in
+  the ASCA annual student outcome goal form, written from the de-identified
+  summary only. You preview the exact data first and nothing is sent unless
+  you press Send. The draft is labeled "AI draft, edit before use", can be
+  edited and copied, is held in memory only, and can be included in the PDF.
+  A number check marks any number in the draft that is not in the summary
+  that was sent. See "AI draft" below.
 
 ## Privacy model
 
 Student data never leaves the browser.
 
-- There is no backend, database, account system, or analytics.
+- There is no database, account system, or analytics. The only server code
+  is the optional AI draft function described below, which never receives
+  student data.
 - Files are read with the browser's File API and held in memory. Parsing and
   queries run in DuckDB-WASM inside a Web Worker with an in-memory database.
 - Nothing from an uploaded file is written to localStorage, IndexedDB,
@@ -76,6 +85,33 @@ Student data never leaves the browser.
   except `public/sample-data/`, so a real export cannot be committed by
   accident.
 
+## AI draft (optional)
+
+> Student data never leaves the browser. One optional feature, the AI draft, sends a de-identified summary (counts and rates only, no names, IDs, or individual values, small counts already hidden) to caselo.org, which forwards it to Anthropic's API and returns a draft. You see the exact data before it is sent, and nothing is sent unless you choose to. caselo.org does not store or log the summary or the draft. Anthropic's terms state that API data is not used to train models, and Anthropic deletes API inputs and outputs within 30 days. The instructions sent with the summary are public: [src/lib/ai/prompt.md](src/lib/ai/prompt.md).
+
+- The function is [`api/draft.ts`](api/draft.ts), a Vercel function on the
+  same site. The browser posts the summary text exactly as shown in the
+  preview.
+- It checks the body against the summary schema in
+  [`src/lib/ai/validate.ts`](src/lib/ai/validate.ts) and rejects anything
+  else with a 400: only format `caselo-summary`, version 1, with exactly the
+  fields `buildSummary` writes, every shown count 10 or more, and rule and
+  tier text in Caselo's own wording. The body is capped at 64 KB.
+- It adds the fixed instructions in `src/lib/ai/prompt.md`, calls the
+  Messages API with a JSON output format and a `max_tokens` cap, and returns
+  only the model name and the draft. It logs status codes only, never
+  request or response bodies.
+- The Content Security Policy is unchanged (`connect-src 'self'`). The
+  function is on the same origin, so the page still cannot connect to any
+  other site.
+- The draft is checked in the browser: every number in it must appear in the
+  summary that was sent (rates compared as whole percents). Counts shown as
+  "<10" or "*" have no number in the summary, so a number written for one is
+  reported.
+- Environment variables: `ANTHROPIC_API_KEY` (required), `DRAFT_MODEL`
+  (default `claude-sonnet-5-5`), and `DRAFT_DISABLED` (set to `1` to turn
+  the feature off; the function then returns 503 with a plain message).
+
 ## Run locally
 
 Requires Node.js 20 or later.
@@ -87,6 +123,9 @@ npm test             # run the tests
 npm run build        # production build in dist/
 npm run sample-data  # regenerate the synthetic sample files
 ```
+
+`npm run dev` serves the page only. The AI draft function runs on Vercel
+(`vercel dev` runs it locally with the environment variables above).
 
 ## Infinite Campus fields it recognizes
 
@@ -138,10 +177,12 @@ src/
     compare/analyze.ts         caseload summaries and change between snapshots
     compare/insights.ts        patterns: grade rates, overlap, distributions, start here
     summary/                   de-identified summary and small-cell suppression
+    ai/                        AI draft: client, summary schema check, number check, prompt.md
     export/csv.ts              results CSV
     roles/roles.ts             roles and what the start here section shows
     preferences.ts             saved settings (no student data)
   components/                  React UI
+api/draft.ts                   the AI draft function (the only server code)
 tests/                         Vitest tests, run against the synthetic data
 scripts/generate-sample-data.mjs
 public/sample-data/            synthetic exports (about 300 invented students), including one .xlsx workbook
@@ -169,11 +210,8 @@ thresholds in `src/config/rules.ts`.
 
 ## Later phases (planned, not built)
 
-- Phase 3: AI narrative and goal drafting from the Phase 2 summary only,
-  aligned to the ASCA model. It will never rank or flag individual students.
-  Its only input will be the summary object from `src/lib/summary/build.ts`.
-  The model call will sit behind one interface in `src/lib/ai/` so the key
-  handling choice can change.
+- Possibly an option for the AI draft to use your own API key, behind the
+  same interface in `src/lib/ai/`.
 - Phase 4: community context by zip code from the Census ACS API.
 - More export types, SIS platforms, and roles.
 
