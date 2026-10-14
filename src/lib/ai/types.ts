@@ -28,8 +28,8 @@ export interface Draft extends DraftContent {
 /** Turns a summary into a draft. The UI depends only on this. */
 export type DraftFromSummary = (summary: DeidentifiedSummary) => Promise<Draft>
 
-/** The draft on the page: what came back, and the counselor's edited text. */
+/** The draft on the page: what came back, and the counselor's edited copy. */
 export interface DraftState {
   draft: Draft
-  text: string
+  content: DraftContent
 }

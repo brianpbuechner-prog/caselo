@@ -65,10 +65,20 @@ export interface Mismatch extends NumberToken {
   after: string
 }
 
+// A change in percentage points is always a calculated number, even when
+// the digits happen to match a count in the summary.
+const POINTS = /^\s*-?\s*(percentage[- ])?(points?|pts?)\b/i
+
+// A time frame in a suggested step ("for 4 weeks", "a 6-week group") is
+// not a claim about the data. Days are not exempt, since "missed 12 days"
+// would be one.
+const TIME_FRAME = /^\s*-?\s*(weeks?|months?|minutes?|hours?)\b/i
+
 /** Numbers in the text that are not in the payload. */
 export function checkNumbers(text: string, allowed: AllowedNumbers): Mismatch[] {
   return findNumbers(text)
-    .filter((t) => !(t.percent ? allowed.percent : allowed.plain).has(t.value))
+    .filter((t) => POINTS.test(text.slice(t.index + t.text.length)) || !(t.percent ? allowed.percent : allowed.plain).has(t.value))
+    .filter((t) => t.percent || !TIME_FRAME.test(text.slice(t.index + t.text.length)))
     .map((t) => ({
       ...t,
       before: text.slice(Math.max(0, t.index - 40), t.index).split('\n').at(-1)!.replace(/^\S*\s/, ''),

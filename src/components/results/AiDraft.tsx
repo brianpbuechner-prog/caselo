@@ -5,11 +5,13 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { DraftError, payloadText, PROMPT_URL, sendPayload } from '../../lib/ai/client'
-import { describePayload, draftDate, draftText } from '../../lib/ai/describe'
+import { describePayload, draftDate, draftStrings, draftText } from '../../lib/ai/describe'
 import { allowedNumbers, checkNumbers } from '../../lib/ai/numbers'
 import type { DraftState } from '../../lib/ai/types'
+import type { DraftContent } from '../../lib/ai/validate'
 import type { DeidentifiedSummary } from '../../lib/summary/build'
 import { Spinner } from '../common'
+import { DraftTabs, DraftTop, Section, TABS } from './DraftView'
 
 export const DRAFT_HEADING = 'AI draft, edit before use'
 
@@ -35,17 +37,17 @@ function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) 
   )
 }
 
-function NumberCheck({ text, payload }: { text: string; payload: string }) {
+function NumberCheck({ content, payload }: { content: DraftContent; payload: string }) {
   const allowed = useMemo(() => allowedNumbers(payload), [payload])
-  const misses = useMemo(() => checkNumbers(text, allowed), [text, allowed])
+  const misses = useMemo(() => draftStrings(content).flatMap((t) => checkNumbers(t, allowed)), [content, allowed])
   if (!misses.length) {
-    return <p className="small muted ai-check-ok">Number check: every number in this draft appears in the summary that was sent.</p>
+    return <p className="small muted">Number check: every number in this draft appears in the summary that was sent.</p>
   }
   return (
     <div className="ai-check" role="status">
       <p>
         <strong>Number check: {misses.length === 1 ? '1 number is' : `${misses.length} numbers are`} not in the summary that was sent.</strong>{' '}
-        Check {misses.length === 1 ? 'it' : 'them'} before using this draft.
+        {misses.length === 1 ? 'It is' : 'They are'} highlighted in the cards, and tabs with one show a red dot. Check before using this draft.
       </p>
       <ul>
         {misses.map((m, i) => (
@@ -60,15 +62,31 @@ function NumberCheck({ text, payload }: { text: string; payload: string }) {
   )
 }
 
-/** The draft as printed in the PDF, under the AI draft label. */
+function Label({ state }: { state: DraftState }) {
+  return (
+    <p className="small muted">
+      {state.draft.model}, {draftDate(state.draft.createdAt)}. Written from the de-identified summary only.
+    </p>
+  )
+}
+
+/** The draft as printed in the PDF: every section, under the AI draft label. */
 export function DraftPrint({ state }: { state: DraftState }) {
+  const allowed = allowedNumbers(state.draft.payload)
   return (
     <section className="report-block draft-print">
       <h2>{DRAFT_HEADING}</h2>
+      <Label state={state} />
+      <DraftTop content={state.content} allowed={allowed} />
+      {TABS.map((t) => (
+        <div key={t.id} className="print-section">
+          <h3>{t.label}</h3>
+          <Section tab={t.id} content={state.content} allowed={allowed} editable={false} onChange={() => {}} />
+        </div>
+      ))}
       <p className="small muted">
-        Written by {state.draft.model} on {draftDate(state.draft.createdAt)} from the de-identified summary only.
+        <strong>Limits.</strong> {state.content.limits}
       </p>
-      <div className="draft-text">{state.text}</div>
     </section>
   )
 }
@@ -98,7 +116,7 @@ export function AiDraftPanel({
     setError(null)
     try {
       const draft = await sendPayload(preview)
-      onState({ draft, text: draftText(draft) })
+      onState({ draft, content: structuredClone(draft) })
       setPreview(null)
     } catch (e) {
       setError(e instanceof DraftError ? e.message : 'Something went wrong. Try again.')
@@ -112,8 +130,9 @@ export function AiDraftPanel({
   return (
     <section className="ai no-print" aria-label="AI draft">
       <p className="small muted ai-intro">
-        Optional. Writes a first draft of a short narrative and 2 or 3 ASCA annual student outcome goals from the
-        de-identified summary only. Nothing is sent until you preview it and choose Send.
+        Optional. Drafts short insight cards from the de-identified summary only: the big picture, next steps for
+        counselors, administrators, teachers, and the support team, how those roles connect, and 2 or 3 ASCA goals.
+        Nothing is sent until you preview it and choose Send.
       </p>
 
       {preview === null ? (
@@ -150,35 +169,36 @@ export function AiDraftPanel({
       {sending && <Spinner text="Writing the draft" />}
       {error && <p className="error">{error}</p>}
 
-      {state && (
-        <div className="ai-output">
-          <div className="section-head">
-            <h2>{DRAFT_HEADING}</h2>
-            <span className="small muted">
-              {state.draft.model}, {draftDate(state.draft.createdAt)}. Written from the de-identified summary only.
-            </span>
-          </div>
-          {stale && (
-            <p className="small muted">
-              The rules or files changed after this draft was written. The draft and the number check still use the
-              summary that was sent.
-            </p>
-          )}
-          <textarea
-            className="ai-text"
-            value={state.text}
-            onChange={(e) => onState({ ...state, text: e.target.value })}
-            spellCheck={false}
-            rows={18}
-            aria-label={DRAFT_HEADING}
-          />
-          <div className="ai-actions">
-            <CopyButton text={state.text} />
-            <span className="small muted">Held in this tab only. Clear data discards it.</span>
-          </div>
-          <NumberCheck text={state.text} payload={state.draft.payload} />
-        </div>
-      )}
+      {state && <DraftOutput state={state} stale={stale} onState={onState} />}
     </section>
+  )
+}
+
+function DraftOutput({ state, stale, onState }: { state: DraftState; stale: boolean; onState: (s: DraftState) => void }) {
+  const allowed = useMemo(() => allowedNumbers(state.draft.payload), [state.draft.payload])
+  const setContent = (content: DraftContent) => onState({ ...state, content })
+  return (
+    <div className="ai-output">
+      <div className="ai-output-head">
+        <h2>{DRAFT_HEADING}</h2>
+        <Label state={state} />
+      </div>
+      {stale && (
+        <p className="small muted">
+          The rules or files changed after this draft was written. The draft and the number check still use the summary
+          that was sent.
+        </p>
+      )}
+      <NumberCheck content={state.content} payload={state.draft.payload} />
+      <DraftTop content={state.content} allowed={allowed} />
+      <DraftTabs content={state.content} allowed={allowed} onChange={setContent} />
+      <p className="small muted draft-limits">
+        <strong>Limits.</strong> {state.content.limits}
+      </p>
+      <div className="ai-actions">
+        <CopyButton text={draftText(state.content)} label="Copy all as text" />
+        <span className="small muted">Held in this tab only. Clear data discards it.</span>
+      </div>
+    </div>
   )
 }
