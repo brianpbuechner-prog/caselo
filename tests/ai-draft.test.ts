@@ -1,9 +1,10 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { payloadText } from '../src/lib/ai/client'
-import { describePayload } from '../src/lib/ai/describe'
+import { describePayload, draftText } from '../src/lib/ai/describe'
 import { allowedNumbers, checkNumbers, findNumbers } from '../src/lib/ai/numbers'
-import type { DraftContent } from '../src/lib/ai/validate'
+import { parseDraftContent, type DraftContent } from '../src/lib/ai/validate'
 import type { Results } from '../src/lib/compare/analyze'
 import type { DeidentifiedSummary } from '../src/lib/summary/build'
 import { promptRuleProblems, recordedDrafts, sampleSummaries, summaryFixture, type SampleName } from './helpers/draft'
@@ -56,6 +57,11 @@ describe('number check', () => {
     expect(checkNumbers('27%', allowed).map((m) => m.text)).toEqual(['27%'])
   })
 
+  test('a change in points is always flagged, even when the digits match a count', () => {
+    // 3 is allowed (Tier 3), but "3 points" is a calculated change.
+    expect(checkNumbers('Academics rose by 3 points.', allowedNumbers(payload.q2)).map((m) => m.text)).toEqual(['3'])
+  })
+
   test('a count is not accepted as a percent', () => {
     // 301 is a count; "301%" is not in the payload.
     expect(checkNumbers('301%', allowedNumbers(payload.q2)).map((m) => m.text)).toEqual(['301%'])
@@ -104,31 +110,37 @@ describe('payload description', () => {
 })
 
 // A draft written by hand to follow every rule, for checking the checker.
-const GOOD_Q2: DraftContent = {
-  narrative: [
-    'This summary covers 301 students in Q2, compared with Q1.',
-    'Of the 301 students, 204 (68%) had no flags, 66 (22%) were in Tier 2, and 31 (10%) were in Tier 3.',
-    'Attendance was the area with the most students flagged: 69 students (23%) missed 10% or more of scheduled days.',
-    'In academics, 42 students (14%) were flagged, and in behavior, 21 students (7%) were flagged.',
-    'The pair of areas flagged together most often was attendance and academics, with 25 students.',
-    'Since Q1, the share of students flagged for attendance went from 21% to 23%, and the share flagged for academics went from 12% to 14%.',
-    'The change counts only the 295 students in both snapshots, and 17 of them moved up a tier.',
-    'Behavior was not in the Q1 files, so it was not compared.',
-    'By grade, grade 9 had the most students in Tier 3, with 12 students (15%), and 22 grade 9 students (28%) were flagged for attendance.',
-    'In grades 10, 11, and 12, Tier 3 had fewer than 10 students each, and the Tier 2 counts are not shown, to protect small counts.',
-    'Behavior counts in every grade were fewer than 10.',
-    'These counts describe what the rules found in the files; the counselor can add context that the data does not show.',
-  ].join(' '),
-  goals: [
-    { area: 'attendance', statement: 'By [date], all students will decrease the chronic absence rate from 23% to [target set by counselor].', baseline: 'Attendance, Q2: 69 students flagged, 23% of 301' },
-    { area: 'overall', statement: 'By [date], grade 9 students will decrease the number in Tier 3 from 12 to [target set by counselor].', baseline: 'Grade 9, Tier 3, Q2: 12 students, 15%' },
-  ],
-  caveats: [
-    'Counts under 10 are shown as <10 and their exact values are unknown.',
-    'Counts marked * are hidden to protect small counts.',
-    'Change since Q1 counts only the 295 students in both snapshots.',
-  ],
-}
+const GOOD_Q2: DraftContent = JSON.parse(readFileSync(join(__dirname, 'fixtures', 'hand-draft-q2.json'), 'utf8'))
+
+describe('draft shape', () => {
+  test('the hand-written draft parses', () => {
+    expect(typeof parseDraftContent(GOOD_Q2)).toBe('object')
+  })
+  test('a read is required unless marked none', () => {
+    const d = JSON.parse(JSON.stringify(GOOD_Q2))
+    d.bigPicture[0].read = ''
+    expect(parseDraftContent(d)).toMatch(/missing read/)
+  })
+  test('unknown roles are rejected', () => {
+    const d = JSON.parse(JSON.stringify(GOOD_Q2))
+    d.connections[0].roles.push('principal')
+    expect(parseDraftContent(d)).toMatch(/unexpected value/)
+  })
+  test('plain text for Copy covers every section', () => {
+    const t = draftText(GOOD_Q2)
+    for (const h of ['Big picture', 'Counselor', 'Administrator', 'Teachers', 'Support team', 'How it connects', 'Goal drafts', 'Limits']) expect(t).toContain(h)
+    expect(t).toContain('Worth asking: ')
+    expect(t).toContain('Do less: ')
+  })
+})
+
+describe('time frames in steps', () => {
+  test('weeks and months are not data claims, days are', () => {
+    const allowed = allowedNumbers(payload.q2)
+    expect(checkNumbers('Run a 6-week group and check in for 4 weeks.', allowed)).toEqual([])
+    expect(checkNumbers('Students missed 13 days on average.', allowed).map((m) => m.text)).toEqual(['13'])
+  })
+})
 
 describe('prompt rule checker', () => {
   test('a draft that follows the rules passes', () => {
@@ -138,32 +150,39 @@ describe('prompt rule checker', () => {
   const bad = (patch: (d: DraftContent) => void) => {
     const d: DraftContent = JSON.parse(JSON.stringify(GOOD_Q2))
     patch(d)
-    return promptRuleProblems(d, payload.q2)
+    return promptRuleProblems(d, payload.q2).join(' | ')
   }
 
-  test('catches a cause', () => {
-    expect(bad((d) => (d.narrative += ' Attendance rose, likely due to winter illness.')).join()).toMatch(/cause/)
+  test('catches guesses about students lives', () => {
+    expect(bad((d) => (d.roles.teachers[0].read = 'Low-income families may lack transportation.'))).toMatch(/guesses/)
   })
 
   test('catches an individual student', () => {
-    expect(bad((d) => (d.narrative += ' One student in grade 9 was flagged in all three areas.')).join()).toMatch(/individual/)
-    expect(bad((d) => (d.narrative += ' Riley Duarte was flagged for attendance.')).join()).toMatch(/names students/)
+    expect(bad((d) => (d.bigPicture[0].point = 'One student in grade 9 was flagged in all three areas.'))).toMatch(/individual/)
+    expect(bad((d) => (d.bigPicture[0].point = 'Riley Duarte was flagged for attendance.'))).toMatch(/names students/)
   })
 
   test('catches a number for a suppressed cell', () => {
-    expect(bad((d) => (d.narrative += ' Grade 10 had 4 students in Tier 3.')).join()).toMatch(/numbers not in the summary: 4/)
+    expect(bad((d) => (d.bigPicture[0].point = 'Grade 10 had 4 students in Tier 3.'))).toMatch(/numbers not in the summary: 4/)
+  })
+
+  test('catches long text and generic steps', () => {
+    expect(bad((d) => (d.headline = 'word '.repeat(40)))).toMatch(/headline is 40 words/)
+    expect(bad((d) => (d.roles.counselor[0].do = 'Monitor closely.'))).toMatch(/generic/)
+  })
+
+  test('catches the wrong number of cards', () => {
+    expect(bad((d) => d.roles.teachers.pop())).toMatch(/1 teachers cards/)
+    expect(bad((d) => d.connections.pop())).toMatch(/1 connections/)
   })
 
   test('catches goals out of form or a suggested target', () => {
-    expect(bad((d) => (d.goals[0].statement = 'Reduce chronic absence.')).join()).toMatch(/ASCA form/)
-    expect(bad((d) => (d.goals[0].statement = 'By [date], all students will decrease the chronic absence rate from 23% to 18%.')).join()).toMatch(/ASCA form/)
-    expect(bad((d) => d.goals.splice(1)).join()).toMatch(/1 goals/)
+    expect(bad((d) => (d.goals[0].statement = 'Reduce chronic absence.'))).toMatch(/ASCA form/)
+    expect(bad((d) => (d.goals[0].statement = 'By [date], all students will decrease the chronic absence rate from 23% to 18%.'))).toMatch(/ASCA form/)
   })
 
-  test('catches a missing area that is not named', () => {
-    const d: DraftContent = { ...GOOD_Q2, narrative: GOOD_Q2.narrative.replace(/Behavior[^.]*\.\s?/g, '').replace(/, and in behavior, 21 students \(7%\) were flagged/, '') }
-    const problems = promptRuleProblems(d, payload.q1)
-    expect(problems.join()).toMatch(/does not name missing area behavior/)
+  test('catches a missing area not named in the limits', () => {
+    expect(promptRuleProblems({ ...GOOD_Q2, limits: 'Counts under 10 are unknown.' }, payload.q1).join()).toMatch(/limits do not name missing area behavior/)
   })
 })
 

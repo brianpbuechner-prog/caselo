@@ -5,9 +5,9 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { DEFAULT_THRESHOLDS } from '../../src/config/rules'
 import { payloadText } from '../../src/lib/ai/client'
-import { draftText } from '../../src/lib/ai/describe'
+import { draftStrings } from '../../src/lib/ai/describe'
 import { allowedNumbers, checkNumbers } from '../../src/lib/ai/numbers'
-import type { DraftContent } from '../../src/lib/ai/validate'
+import { ROLE_KEYS, type DraftContent, type Insight } from '../../src/lib/ai/validate'
 import { analyze, type Results } from '../../src/lib/compare/analyze'
 import { buildSnapshots } from '../../src/lib/grouping/snapshots'
 import { infiniteCampus } from '../../src/lib/sis/infinite-campus/fields'
@@ -44,8 +44,11 @@ export function recordedDrafts(): { file: string; sample: SampleName; model: str
     })
 }
 
-const CAUSE = /\b(due to|because|likely|suggests?|suggesting|driven by|as a result( of)?|caused( by)?|attributable|stems? from|owing to|leads? to|contribut(es|ed|ing) to)\b/i
-const INDIVIDUAL = /\b(a|one|the|this|that|each) (particular |individual |specific )?student\b(?! (count|population|body|group|outcome|support))|\bstudents? named\b|\btop \d+ students\b/i
+// Guesses about students' lives or blame, which the prompt rules out. (Reads
+// about patterns in the data, labeled "Likely" or "Worth asking", are allowed.)
+const GUESS = /\b(lazy|unmotivated|don'?t care|poverty|poor families|low[- ]income|home life|divorce|drugs?|gangs?|race|racial|ethnic\w*|immigra\w*|disabilit\w*|diagnos\w*|ADHD|depress\w*|trauma\w*|bad parent\w*)\b/i
+const INDIVIDUAL = /\b(a|one|the|this|that) (particular |individual |specific )?student\b(?! (count|population|body|group|outcome|support|list))|\bstudents? named\b|\btop \d+ students\b/i
+const GENERIC = /\b(monitor (closely|progress)|continue to (support|monitor)|raise awareness|reach out to families)\b/i
 const GOAL = /^By \[date\], .+ will (increase|decrease) .+ from .+ to \[target set by counselor\]\.?$/
 
 const SAMPLE_FILES = ['ic-students-q1.csv', 'ic-students-q2.csv', 'ic-behavior-q2.csv']
@@ -65,31 +68,66 @@ function studentNames(): string[] {
 
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).length
 
+// Word limits from the prompt. The check allows a quarter more before it
+// complains, so one long word or a number does not fail a draft.
+const LIMITS = { headline: 25, label: 8, point: 20, read: 25, do: 20, doLess: 15, step: 20, limits: 40 }
+function tooLong(problems: string[], where: string, text: string, limit: number) {
+  const n = words(text)
+  if (n > Math.ceil(limit * 1.25)) problems.push(`${where} is ${n} words (limit ${limit})`)
+}
+
+function checkInsight(problems: string[], where: string, c: Insight) {
+  tooLong(problems, `${where} label`, c.label, LIMITS.label)
+  tooLong(problems, `${where} point`, c.point, LIMITS.point)
+  tooLong(problems, `${where} read`, c.read, LIMITS.read)
+  tooLong(problems, `${where} do`, c.do, LIMITS.do)
+  tooLong(problems, `${where} do less`, c.doLess, LIMITS.doLess)
+  if (!/\d/.test(c.number)) problems.push(`${where} has no number`)
+  if (c.readKind === 'none' && c.read) problems.push(`${where} has a read marked none`)
+  const generic = c.do.match(GENERIC)
+  if (generic) problems.push(`${where} step is generic: "${generic[0]}"`)
+}
+
 /** Every prompt rule that can be checked by reading the draft. Returns the problems found. */
 export function promptRuleProblems(draft: DraftContent, payload: string): string[] {
   const problems: string[] = []
-  const text = draftText(draft)
+  const strings = draftStrings(draft)
+  const text = strings.join('\n')
   const summary = JSON.parse(payload) as DeidentifiedSummary
 
-  const misses = checkNumbers(text, allowedNumbers(payload))
+  const allowed = allowedNumbers(payload)
+  const misses = strings.flatMap((t) => checkNumbers(t, allowed))
   if (misses.length) problems.push(`numbers not in the summary: ${misses.map((m) => m.text).join(', ')}`)
 
-  const cause = text.match(CAUSE)
-  if (cause) problems.push(`gives a cause: "${cause[0]}"`)
-
+  const guess = text.match(GUESS)
+  if (guess) problems.push(`guesses about students' lives or blames: "${guess[0]}"`)
   const individual = text.match(INDIVIDUAL)
   if (individual) problems.push(`mentions an individual student: "${individual[0]}"`)
   const named = studentNames().filter((n) => text.includes(n))
   if (named.length) problems.push(`names students: ${named.join(', ')}`)
 
-  for (const c of summary.missingRules) if (!new RegExp(`\\b${c}\\b`, 'i').test(text)) problems.push(`does not name missing area ${c}`)
+  for (const c of summary.missingRules) if (!new RegExp(`\\b${c}\\b`, 'i').test(draft.limits)) problems.push(`limits do not name missing area ${c}`)
+  for (const c of summary.change?.notCompared ?? []) if (!new RegExp(`\\b${c}\\b`, 'i').test(text)) problems.push(`does not say ${c} was not compared`)
 
-  const n = words(draft.narrative)
-  if (n < 150 || n > 250) problems.push(`narrative is ${n} words`)
+  tooLong(problems, 'headline', draft.headline, LIMITS.headline)
+  tooLong(problems, 'limits', draft.limits, LIMITS.limits)
+  if (draft.keyNumbers.length < 3 || draft.keyNumbers.length > 4) problems.push(`${draft.keyNumbers.length} key numbers`)
+  for (const [i, k] of draft.keyNumbers.entries()) tooLong(problems, `key number ${i + 1} label`, k.label, LIMITS.label)
+  if (draft.bigPicture.length < 2 || draft.bigPicture.length > 3) problems.push(`${draft.bigPicture.length} big picture cards`)
+  draft.bigPicture.forEach((c, i) => checkInsight(problems, `big picture ${i + 1}`, c))
+  for (const r of ROLE_KEYS) {
+    if (draft.roles[r].length !== 2) problems.push(`${draft.roles[r].length} ${r} cards`)
+    draft.roles[r].forEach((c, i) => checkInsight(problems, `${r} ${i + 1}`, c))
+  }
+  if (draft.connections.length < 2 || draft.connections.length > 3) problems.push(`${draft.connections.length} connections`)
+  draft.connections.forEach((c, i) => {
+    if (c.roles.length < 2) problems.push(`connection ${i + 1} names one role`)
+    if (c.steps.some((st) => !c.roles.includes(st.role))) problems.push(`connection ${i + 1} has a step for a role it does not list`)
+    for (const st of c.steps) tooLong(problems, `connection ${i + 1} step`, st.step, LIMITS.step)
+  })
 
   if (draft.goals.length < 2 || draft.goals.length > 3) problems.push(`${draft.goals.length} goals`)
   for (const g of draft.goals) if (!GOAL.test(g.statement.trim())) problems.push(`goal not in ASCA form: "${g.statement}"`)
-  if (!draft.caveats.length) problems.push('no caveats')
   return problems
 }
 

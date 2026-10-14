@@ -2,7 +2,7 @@
 // would be sent (built from the payload itself), and the draft as editable
 // text.
 
-import { MIN_SHOWN, type DraftContent } from './validate'
+import { MIN_SHOWN, ROLE_KEYS, type DraftContent, type Insight, type RoleKey } from './validate'
 
 const AREA: Record<string, string> = { attendance: 'attendance', academics: 'academics', behavior: 'behavior' }
 
@@ -29,15 +29,50 @@ export function describePayload(payload: string): string {
   return `This sends the ${s.label} summary: ${join(parts)}, plus the rule and tier descriptions.${missing} No names, IDs, or individual values. Counts under ${MIN_SHOWN} are shown as <${MIN_SHOWN} or hidden.`
 }
 
-/** The draft as one editable block of text. */
+export const ROLE_LABELS: Record<RoleKey, string> = {
+  counselor: 'Counselor',
+  administrator: 'Administrator',
+  teachers: 'Teachers',
+  supportTeam: 'Support team',
+}
+
+const READ_LABEL = { question: 'Worth asking', likely: 'Likely', none: '' } as const
+
+function insightText(c: Insight): string {
+  const lines = [`${c.number} ${c.label}`, c.point]
+  if (c.readKind !== 'none' && c.read) lines.push(`${READ_LABEL[c.readKind]}: ${c.read}`)
+  lines.push(`Do: ${c.do}`)
+  if (c.doLess) lines.push(`Do less: ${c.doLess}`)
+  return lines.map((l, i) => (i === 0 ? `- ${l}` : `  ${l}`)).join('\n')
+}
+
+/** The draft as plain text, for Copy. */
 export function draftText(d: DraftContent): string {
   return [
-    d.narrative.trim(),
-    'Goal drafts',
-    d.goals.map((g) => `- ${g.statement.trim()}\n  Baseline: ${g.baseline.trim()}`).join('\n'),
-    'Caveats',
-    d.caveats.map((c) => `- ${c.trim()}`).join('\n'),
+    d.headline,
+    d.keyNumbers.map((k) => `${k.value} ${k.label}`).join('\n'),
+    `Big picture\n${d.bigPicture.map(insightText).join('\n')}`,
+    ...ROLE_KEYS.map((r) => `${ROLE_LABELS[r]}\n${d.roles[r].map(insightText).join('\n')}`),
+    `How it connects\n${d.connections
+      .map((c) => [`- ${c.number} ${c.label} (${c.roles.map((r) => ROLE_LABELS[r]).join(', ')})`, `  ${c.point}`, ...c.steps.map((s) => `  ${ROLE_LABELS[s.role]}: ${s.step}`)].join('\n'))
+      .join('\n')}`,
+    `Goal drafts\n${d.goals.map((g) => `- ${g.statement}\n  Baseline: ${g.baseline}`).join('\n')}`,
+    `Limits\n${d.limits}`,
   ].join('\n\n')
+}
+
+/** Every piece of text in a draft, for the number check. */
+export function draftStrings(d: DraftContent): string[] {
+  const card = (c: Insight) => [c.number, c.label, c.point, c.read, c.do, c.doLess]
+  return [
+    d.headline,
+    ...d.keyNumbers.flatMap((k) => [k.value, k.label]),
+    ...d.bigPicture.flatMap(card),
+    ...ROLE_KEYS.flatMap((r) => d.roles[r].flatMap(card)),
+    ...d.connections.flatMap((c) => [c.number, c.label, c.point, ...c.steps.map((s) => s.step)]),
+    ...d.goals.flatMap((g) => [g.statement, g.baseline]),
+    d.limits,
+  ]
 }
 
 /** A draft's date for display, such as "October 13, 2026". */

@@ -52,13 +52,17 @@ Live site: https://caselo.org
   the results page any other way also gets this no-names summary. Ticking
   "Include student names" before downloading prints the full results page
   and student list instead, marked as containing names.
-- Optional AI draft: a first draft of a short narrative and 2 or 3 goals in
-  the ASCA annual student outcome goal form, written from the de-identified
-  summary only. You preview the exact data first and nothing is sent unless
-  you press Send. The draft is labeled "AI draft, edit before use", can be
-  edited and copied, is held in memory only, and can be included in the PDF.
-  A number check marks any number in the draft that is not in the summary
-  that was sent. See "AI draft" below.
+- Optional AI draft, written from the de-identified summary only: a
+  headline and 3 or 4 key numbers, then short insight cards in tabs for the
+  big picture, counselors, administrators, teachers, and the support team,
+  how those roles connect, and 2 or 3 goals in the ASCA annual student
+  outcome goal form. Each card leads with one number from the summary, says
+  why it matters, gives a read on it when one is useful ("Likely" or "Worth
+  asking"), and suggests one thing to do and one to do less. You preview the
+  exact data first and nothing is sent unless you press Send. The draft is
+  labeled "AI draft, edit before use", each card can be edited, it is held
+  in memory only, and it can be included in the PDF. A number check marks
+  any number that is not in the summary that was sent. See "AI draft" below.
 
 ## Privacy model
 

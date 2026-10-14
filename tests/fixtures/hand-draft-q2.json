@@ -1,0 +1,117 @@
+{
+  "headline": "Attendance is the main concern: 69 students are chronically absent, it rose since Q1, and it overlaps with academics more than any other pair.",
+  "keyNumbers": [
+    { "value": "23%", "label": "chronically absent, up from 21%" },
+    { "value": "31", "label": "students in Tier 3" },
+    { "value": "25", "label": "flagged in attendance and academics" },
+    { "value": "17", "label": "moved up a tier since Q1" }
+  ],
+  "bigPicture": [
+    {
+      "number": "23%", "label": "chronically absent, up from 21% in Q1",
+      "point": "Attendance flags more students than academics or behavior, and it is the only area that grew.",
+      "readKind": "likely", "read": "Most students flagged for academics are also flagged for attendance, so missed days may be driving many academic flags.",
+      "do": "Treat attendance as the first lever for this snapshot, before adding academic interventions.",
+      "doLess": "Separate academic and attendance plans for the same students."
+    },
+    {
+      "number": "17", "label": "students moved up a tier since Q1",
+      "point": "More students moved up a tier than down, so needs are growing faster than they are being met.",
+      "readKind": "question", "read": "Did the students who moved up already have a tier 2 support, or were they new to the list?",
+      "do": "At the next MTSS meeting, review whether current tier 2 supports have exit criteria.",
+      "doLess": ""
+    }
+  ],
+  "roles": {
+    "counselor": [
+      {
+        "number": "28%", "label": "of grade 9 flagged for attendance",
+        "point": "Grade 9 has the highest attendance rate of any grade, above the school's 23%.",
+        "readKind": "question", "read": "Are these absences full days or missed first periods? The attendance office can pull period-level data.",
+        "do": "Start a 6-week check-in group for grade 9 students with attendance flags.",
+        "doLess": "One-time attendance letters with no follow-up."
+      },
+      {
+        "number": "25", "label": "flagged in attendance and academics",
+        "point": "This is the largest overlap between two areas.",
+        "readKind": "none", "read": "",
+        "do": "Use one shared plan for these students that covers both attendance and course recovery.",
+        "doLess": ""
+      }
+    ],
+    "administrator": [
+      {
+        "number": "23%", "label": "chronically absent, up from 21%",
+        "point": "The rise came while every other area held steady or was not compared.",
+        "readKind": "question", "read": "Did anything change in Q2 schedules or start times that could affect morning arrival?",
+        "do": "Ask the attendance office for a monthly report by grade and period through Q4.",
+        "doLess": "Schoolwide assemblies about attendance."
+      },
+      {
+        "number": "31", "label": "students in Tier 3",
+        "point": "Tier 3 holds 10% of students, which strains small-group and individual support time.",
+        "readKind": "none", "read": "",
+        "do": "Protect one weekly block for the intervention team to review Tier 3 cases.",
+        "doLess": ""
+      }
+    ],
+    "teachers": [
+      {
+        "number": "23%", "label": "chronically absent, up from 21% in Q1",
+        "point": "More than a fifth of students missed 10% or more of days.",
+        "readKind": "question", "read": "Are absences clustered in first period or on Mondays? The attendance office can check.",
+        "do": "In grade 9, greet and log first-period arrivals for 4 weeks.",
+        "doLess": "Whole-class attendance reminders, which reach students already there."
+      },
+      {
+        "number": "14%", "label": "flagged for academics, up from 12%",
+        "point": "Academic flags rose alongside attendance.",
+        "readKind": "likely", "read": "With most academic flags also absent often, missing work may be the gap more than skill.",
+        "do": "Offer a make-up window for missed assignments before grades post.",
+        "doLess": "Zeroes for missing work from absent days."
+      }
+    ],
+    "supportTeam": [
+      {
+        "number": "10", "label": "newly flagged for attendance since Q1",
+        "point": "New attendance flags outnumber the ones that cleared.",
+        "readKind": "none", "read": "",
+        "do": "Contact families of newly flagged students within 2 weeks of the flag.",
+        "doLess": ""
+      },
+      {
+        "number": "21", "label": "flagged for behavior",
+        "point": "Behavior flags only 7% of students and was not in the Q1 files.",
+        "readKind": "question", "read": "Are behavior incidents logged the same way in every grade?",
+        "do": "Check referral logging practices with each grade team before Q3.",
+        "doLess": ""
+      }
+    ]
+  },
+  "connections": [
+    {
+      "roles": ["counselor", "teachers", "supportTeam"],
+      "number": "25", "label": "flagged in attendance and academics",
+      "point": "These students need one plan, not three.",
+      "steps": [
+        { "role": "teachers", "step": "Share the list of missing assignments for these students each Friday." },
+        { "role": "counselor", "step": "Meet with each student weekly to set an attendance and work goal." },
+        { "role": "supportTeam", "step": "Reach families of students who miss two goals in a row." }
+      ]
+    },
+    {
+      "roles": ["administrator", "supportTeam"],
+      "number": "31", "label": "students in Tier 3",
+      "point": "Tier 3 support depends on protected time and clear handoffs.",
+      "steps": [
+        { "role": "administrator", "step": "Schedule a weekly intervention team block." },
+        { "role": "supportTeam", "step": "Bring a short status for each Tier 3 case to that block." }
+      ]
+    }
+  ],
+  "goals": [
+    { "area": "attendance", "statement": "By [date], all students will decrease the chronic absence rate from 23% to [target set by counselor].", "baseline": "Attendance, Q2: 69 students flagged, 23% of 301" },
+    { "area": "overall", "statement": "By [date], all students will decrease the number in Tier 3 from 31 to [target set by counselor].", "baseline": "Tier 3, Q2: 31 students, 10%" }
+  ],
+  "limits": "Counts under 10 are not shown and are unknown. Behavior was not in the Q1 files, so it was not compared. Change counts only the 295 students in both snapshots."
+}

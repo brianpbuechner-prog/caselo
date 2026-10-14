@@ -159,7 +159,47 @@ export function checkSummary(value: unknown): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// The draft the model returns.
+// The draft the model returns: short insight cards by role.
+
+export const ROLE_KEYS = ['counselor', 'administrator', 'teachers', 'supportTeam'] as const
+export type RoleKey = (typeof ROLE_KEYS)[number]
+export const READ_KINDS = ['question', 'likely', 'none'] as const
+export type ReadKind = (typeof READ_KINDS)[number]
+
+export interface KeyNumber {
+  /** A number from the summary, as written ("23%", "31"). */
+  value: string
+  /** What it counts, a few words ("chronically absent, up from 21%"). */
+  label: string
+}
+
+export interface Insight {
+  /** The one number the card is about, as written in the summary. */
+  number: string
+  /** What the number counts, a few words. */
+  label: string
+  /** Why it matters, one short sentence. */
+  point: string
+  /** "question": worth asking. "likely": what the pattern shows. "none": no read. */
+  readKind: ReadKind
+  /** The read itself, or "" when readKind is "none". */
+  read: string
+  /** One specific action. */
+  do: string
+  /** One thing to ease off, or "". */
+  doLess: string
+}
+
+export interface Connection {
+  /** The roles that share this number. */
+  roles: RoleKey[]
+  number: string
+  label: string
+  /** What the shared number means for them together. */
+  point: string
+  /** Who does what, one line per role. */
+  steps: { role: RoleKey; step: string }[]
+}
 
 export interface DraftGoal {
   /** One of the rule categories, or "overall" for a tier goal. */
@@ -171,43 +211,132 @@ export interface DraftGoal {
 }
 
 export interface DraftContent {
-  narrative: string
+  headline: string
+  keyNumbers: KeyNumber[]
+  bigPicture: Insight[]
+  roles: Record<RoleKey, Insight[]>
+  connections: Connection[]
   goals: DraftGoal[]
-  caveats: string[]
+  /** One or two sentences on what the summary cannot show. */
+  limits: string
 }
+
+const str = { type: 'string' } as const
+const INSIGHT_SCHEMA = {
+  type: 'object',
+  properties: {
+    number: str,
+    label: str,
+    point: str,
+    readKind: { type: 'string', enum: [...READ_KINDS] },
+    read: str,
+    do: str,
+    doLess: str,
+  },
+  required: ['number', 'label', 'point', 'readKind', 'read', 'do', 'doLess'],
+  additionalProperties: false,
+} as const
+const insights = (description: string) => ({ type: 'array', description, minItems: 1, items: INSIGHT_SCHEMA }) as const
+const roleEnum = { type: 'string', enum: [...ROLE_KEYS] } as const
 
 /** JSON schema sent to the Messages API as the required output format. */
 export const DRAFT_JSON_SCHEMA = {
   type: 'object',
   properties: {
-    narrative: { type: 'string', description: '150 to 250 words.' },
+    headline: str,
+    keyNumbers: {
+      type: 'array',
+      description: '3 or 4 key numbers.',
+      minItems: 1,
+      items: { type: 'object', properties: { value: str, label: str }, required: ['value', 'label'], additionalProperties: false },
+    },
+    bigPicture: insights('2 or 3 cards.'),
+    roles: {
+      type: 'object',
+      properties: {
+        counselor: insights('2 cards.'),
+        administrator: insights('2 cards.'),
+        teachers: insights('2 cards.'),
+        supportTeam: insights('2 cards.'),
+      },
+      required: [...ROLE_KEYS],
+      additionalProperties: false,
+    },
+    connections: {
+      type: 'array',
+      description: '2 or 3 cards.',
+      minItems: 1,
+      items: {
+        type: 'object',
+        properties: {
+          roles: { type: 'array', minItems: 1, items: roleEnum },
+          number: str,
+          label: str,
+          point: str,
+          steps: {
+            type: 'array',
+            minItems: 1,
+            items: { type: 'object', properties: { role: roleEnum, step: str }, required: ['role', 'step'], additionalProperties: false },
+          },
+        },
+        required: ['roles', 'number', 'label', 'point', 'steps'],
+        additionalProperties: false,
+      },
+    },
     goals: {
       type: 'array',
       description: '2 or 3 goals.',
       minItems: 1,
       items: {
         type: 'object',
-        properties: {
-          area: { type: 'string', enum: [...CATEGORIES, 'overall'] },
-          statement: { type: 'string' },
-          baseline: { type: 'string' },
-        },
+        properties: { area: { type: 'string', enum: [...CATEGORIES, 'overall'] }, statement: str, baseline: str },
         required: ['area', 'statement', 'baseline'],
         additionalProperties: false,
       },
     },
-    caveats: { type: 'array', items: { type: 'string' } },
+    limits: str,
   },
-  required: ['narrative', 'goals', 'caveats'],
+  required: ['headline', 'keyNumbers', 'bigPicture', 'roles', 'connections', 'goals', 'limits'],
   additionalProperties: false,
 } as const
 
-const MAX_TEXT = 4000
+const MAX_TEXT = 600
 
-function text(v: unknown, path: string): string {
-  if (typeof v !== 'string' || !v.trim()) fail(path, 'expected text')
+function text(v: unknown, path: string, allowEmpty = false): string {
+  if (typeof v !== 'string' || (!allowEmpty && !v.trim())) fail(path, 'expected text')
   if (v.length > MAX_TEXT) fail(path, 'too long')
   return v
+}
+
+function oneOf<T extends string>(v: unknown, path: string, options: readonly T[]): T {
+  if (typeof v !== 'string' || !(options as readonly string[]).includes(v)) fail(path, 'unexpected value')
+  return v as T
+}
+
+function count(list: unknown[], path: string, min: number, max: number): void {
+  if (list.length < min || list.length > max) fail(path, `expected ${min} to ${max} items`)
+}
+
+function insight(v: unknown, path: string): Insight {
+  const o = keys(v, path, ['number', 'label', 'point', 'readKind', 'read', 'do', 'doLess'])
+  const readKind = oneOf(o.readKind, `${path}.readKind`, READ_KINDS)
+  const read = text(o.read, `${path}.read`, true)
+  if (readKind !== 'none' && !read.trim()) fail(`${path}.read`, 'missing read')
+  return {
+    number: text(o.number, `${path}.number`),
+    label: text(o.label, `${path}.label`),
+    point: text(o.point, `${path}.point`),
+    readKind,
+    read: readKind === 'none' ? '' : read,
+    do: text(o.do, `${path}.do`),
+    doLess: text(o.doLess, `${path}.doLess`, true),
+  }
+}
+
+function insightList(v: unknown, path: string, min: number, max: number): Insight[] {
+  const list = array(v, path, max)
+  count(list, path, min, max)
+  return list.map((x, i) => insight(x, `${path}[${i}]`))
 }
 
 /**
@@ -216,14 +345,45 @@ function text(v: unknown, path: string): string {
  */
 export function parseDraftContent(value: unknown): DraftContent | string {
   try {
-    const d = keys(value, 'draft', ['narrative', 'goals', 'caveats'])
-    const goals = array(d.goals, 'draft.goals', 3).map((g, i) => {
-      const o = keys(g, `draft.goals[${i}]`, ['area', 'statement', 'baseline'])
-      return { area: text(o.area, `draft.goals[${i}].area`), statement: text(o.statement, `draft.goals[${i}].statement`), baseline: text(o.baseline, `draft.goals[${i}].baseline`) }
-    })
-    if (goals.length < 2) fail('draft.goals', 'expected 2 or 3 goals')
-    const caveats = array(d.caveats, 'draft.caveats', 8).map((c, i) => text(c, `draft.caveats[${i}]`))
-    return { narrative: text(d.narrative, 'draft.narrative'), goals, caveats }
+    const d = keys(value, 'draft', ['headline', 'keyNumbers', 'bigPicture', 'roles', 'connections', 'goals', 'limits'])
+    const keyNumbers = array(d.keyNumbers, 'draft.keyNumbers', 4)
+    count(keyNumbers, 'draft.keyNumbers', 2, 4)
+    const r = keys(d.roles, 'draft.roles', [...ROLE_KEYS])
+    const roles = Object.fromEntries(ROLE_KEYS.map((k) => [k, insightList(r[k], `draft.roles.${k}`, 1, 3)])) as Record<RoleKey, Insight[]>
+    const connections = array(d.connections, 'draft.connections', 3)
+    count(connections, 'draft.connections', 1, 3)
+    const goals = array(d.goals, 'draft.goals', 3)
+    count(goals, 'draft.goals', 2, 3)
+    return {
+      headline: text(d.headline, 'draft.headline'),
+      keyNumbers: keyNumbers.map((k, i) => {
+        const o = keys(k, `draft.keyNumbers[${i}]`, ['value', 'label'])
+        return { value: text(o.value, `draft.keyNumbers[${i}].value`), label: text(o.label, `draft.keyNumbers[${i}].label`) }
+      }),
+      bigPicture: insightList(d.bigPicture, 'draft.bigPicture', 1, 3),
+      roles,
+      connections: connections.map((c, i) => {
+        const path = `draft.connections[${i}]`
+        const o = keys(c, path, ['roles', 'number', 'label', 'point', 'steps'])
+        const steps = array(o.steps, `${path}.steps`, 4)
+        count(steps, `${path}.steps`, 1, 4)
+        return {
+          roles: array(o.roles, `${path}.roles`, 4).map((x, j) => oneOf(x, `${path}.roles[${j}]`, ROLE_KEYS)),
+          number: text(o.number, `${path}.number`),
+          label: text(o.label, `${path}.label`),
+          point: text(o.point, `${path}.point`),
+          steps: steps.map((st, j) => {
+            const so = keys(st, `${path}.steps[${j}]`, ['role', 'step'])
+            return { role: oneOf(so.role, `${path}.steps[${j}].role`, ROLE_KEYS), step: text(so.step, `${path}.steps[${j}].step`) }
+          }),
+        }
+      }),
+      goals: goals.map((g, i) => {
+        const o = keys(g, `draft.goals[${i}]`, ['area', 'statement', 'baseline'])
+        return { area: text(o.area, `draft.goals[${i}].area`), statement: text(o.statement, `draft.goals[${i}].statement`), baseline: text(o.baseline, `draft.goals[${i}].baseline`) }
+      }),
+      limits: text(d.limits, 'draft.limits'),
+    }
   } catch (e) {
     if (e instanceof Invalid) return e.message
     throw e

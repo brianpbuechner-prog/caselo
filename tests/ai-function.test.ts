@@ -33,14 +33,7 @@ function post(body: string, headers: Record<string, string> = {}): Request {
   return new Request('https://caselo.org/api/draft', { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body })
 }
 
-const GOOD_DRAFT = {
-  narrative: 'Of 301 students in Q2, 204 had no flags.',
-  goals: [
-    { area: 'attendance', statement: 'By [date], all students will decrease chronic absence from 23% to [target set by counselor].', baseline: 'Attendance, Q2: 69 of 301' },
-    { area: 'overall', statement: 'By [date], all students will decrease Tier 3 from 31 to [target set by counselor].', baseline: 'Tier 3, Q2: 31' },
-  ],
-  caveats: ['Counts under 10 are not shown.'],
-}
+const GOOD_DRAFT = JSON.parse(readFileSync(join(__dirname, 'fixtures', 'hand-draft-q2.json'), 'utf8'))
 
 function anthropicReply(content: unknown, stop = 'end_turn'): Response {
   return new Response(JSON.stringify({ model: 'claude-sonnet-5-5', stop_reason: stop, content: [{ type: 'text', text: JSON.stringify(content) }] }), { status: 200 })
@@ -156,7 +149,7 @@ describe('draft function', () => {
     for (const call of log.mock.calls) {
       const line = call.join(' ')
       expect(line).not.toContain('301')
-      expect(line).not.toContain('narrative')
+      expect(line).not.toContain('headline')
     }
   })
 })

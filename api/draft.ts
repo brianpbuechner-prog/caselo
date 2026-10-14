@@ -20,7 +20,7 @@ export const DEFAULT_MODEL = 'claude-sonnet-5-5'
 // tokens used, not this cap.
 export const MAX_TOKENS = 8000
 const API_URL = 'https://api.anthropic.com/v1/messages'
-const TIMEOUT_MS = 50_000
+const TIMEOUT_MS = 110_000
 
 export interface DraftEnv {
   ANTHROPIC_API_KEY?: string

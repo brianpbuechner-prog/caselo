@@ -4,7 +4,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/draft.ts": { "maxDuration": 60, "includeFiles": "src/lib/ai/prompt.md" }
+    "api/draft.ts": { "maxDuration": 120, "includeFiles": "src/lib/ai/prompt.md" }
   },
   "headers": [
     {
