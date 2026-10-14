@@ -166,7 +166,7 @@ export function AiDraftPanel({
         </div>
       )}
 
-      {sending && <Spinner text="Writing the draft" />}
+      {sending && <Spinner text="Writing the draft. This can take up to a minute." />}
       {error && <p className="error">{error}</p>}
 
       {state && <DraftOutput state={state} stale={stale} onState={onState} />}
