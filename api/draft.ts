@@ -8,17 +8,17 @@
 //
 // Environment variables:
 //   ANTHROPIC_API_KEY  required
-//   DRAFT_MODEL        model name, default claude-sonnet-5-5
+//   DRAFT_MODEL        model name, default claude-haiku-5-5
 //   DRAFT_DISABLED     set to 1 or true to turn the feature off (503)
 
 /// <reference types="node" />
 import { readFileSync } from 'node:fs'
 import { checkSummary, DRAFT_JSON_SCHEMA, MAX_BODY_BYTES, parseDraftContent } from '../src/lib/ai/validate.js'
 
-export const DEFAULT_MODEL = 'claude-sonnet-5-5'
+export const DEFAULT_MODEL = 'claude-haiku-5-5'
 // Covers the draft plus any thinking the model does first. Billing is for
 // tokens used, not this cap.
-export const MAX_TOKENS = 8000
+export const MAX_TOKENS = 16000
 const API_URL = 'https://api.anthropic.com/v1/messages'
 const TIMEOUT_MS = 110_000
 
@@ -108,6 +108,9 @@ export async function handleDraft(request: Request, env: DraftEnv, fetchImpl: ty
     // Counts and block types only, never content.
     const blocks = (result?.content ?? []).map((b) => String(b.type)).join(',')
     console.error(`draft: stop_reason ${String(result?.stop_reason)} output_tokens ${String(result?.usage?.output_tokens)} blocks ${blocks}`)
+    if (result?.stop_reason === 'max_tokens') {
+      return error(502, 'The draft ran long and was cut off before it finished.')
+    }
     return error(502, 'The model did not finish the draft. Try again.')
   }
   const text = result.content?.find((b) => b.type === 'text')?.text
