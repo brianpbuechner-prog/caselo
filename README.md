@@ -113,7 +113,7 @@ Student data never leaves the browser.
   "<10" or "*" have no number in the summary, so a number written for one is
   reported.
 - Environment variables: `ANTHROPIC_API_KEY` (required), `DRAFT_MODEL`
-  (default `claude-sonnet-5-5`), and `DRAFT_DISABLED` (set to `1` to turn
+  (default `claude-haiku-5-5`), and `DRAFT_DISABLED` (set to `1` to turn
   the feature off; the function then returns 503 with a plain message).
 
 ## Run locally
