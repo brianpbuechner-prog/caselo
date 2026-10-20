@@ -1,16 +1,21 @@
 import { Fragment, useRef, useState } from 'react'
 import { downloadText } from '../lib/export/csv'
 import { dataLines, splitLine } from '../lib/files/delimiter'
-import type { ColumnMapping, MatchMethod } from '../lib/mapping/detect'
+import { isConfident, type ColumnMapping, type FieldMatch, type MatchMethod } from '../lib/mapping/detect'
 import { applyMappingJson, mappingToJson } from '../lib/mapping/json'
 import type { UploadedFile } from '../lib/model'
 import { CATEGORY_LABELS, type Category, type SisCatalog } from '../lib/sis/types'
 
 const METHOD_TEXT: Record<MatchMethod, string> = {
   default: 'Default name',
-  fuzzy: 'Close match, check',
+  fuzzy: 'Close match',
+  values: 'Read from values',
   manual: 'Set by you',
   none: 'Not found',
+}
+
+function methodText(m: FieldMatch): string {
+  return isConfident(m) ? METHOD_TEXT[m.method] : `${METHOD_TEXT[m.method]}, check`
 }
 
 /** First non-empty value in each column, to help confirm a match. */
@@ -166,8 +171,8 @@ export function MappingEditor({
               </td>
               <td className="small muted">{m.index == null ? '' : ex[m.index]}</td>
               <td>
-                <span className={`tag${m.method === 'fuzzy' ? ' look' : ''}`}>
-                  {METHOD_TEXT[m.method]}
+                <span className={`tag${isConfident(m) ? '' : ' look'}`}>
+                  {methodText(m)}
                 </span>
               </td>
             </tr>

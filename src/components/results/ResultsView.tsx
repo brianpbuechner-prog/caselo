@@ -31,6 +31,8 @@ export function ResultsView({
   compact,
   onCompact,
   onFiles,
+  onReadout,
+  fileCount,
   onClear,
   onAbout,
   draft,
@@ -45,6 +47,8 @@ export function ResultsView({
   compact: boolean
   onCompact: (v: boolean) => void
   onFiles: () => void
+  onReadout: () => void
+  fileCount: number
   onClear: () => void
   onAbout: () => void
   draft: DraftState | null
@@ -147,6 +151,12 @@ export function ResultsView({
         </div>
         {aiOpen && <AiDraftPanel summary={summary} state={draft} onState={onDraft} />}
         <p className="names-note">Contains student names. Share only with staff who need it.</p>
+        <p className="small muted readout-line no-print">
+          Read {fileCount} {fileCount === 1 ? 'file' : 'files'} as {labels.length === 1 ? 'one snapshot' : `${labels.length} snapshots`}.{' '}
+          <button className="link" onClick={onReadout}>
+            How Caselo read your files
+          </button>
+        </p>
         <MissingLine results={results} warnings={warnings} />
         <div className="top">
           <Summary results={results} filter={filter} onShowStudents={showStudents} />

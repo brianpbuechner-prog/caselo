@@ -33,7 +33,7 @@ export const infiniteCampus: SisCatalog = {
       category: 'identity',
       kind: 'id',
       defaultHeaders: ['student.studentNumber'],
-      aliases: ['student number', 'student id', 'student num', 'local id', 'id number', 'student no', 'stu number', 'local student id', 'district student id', 'stu id'],
+      aliases: ['student number', 'student id', 'student num', 'local id', 'id number', 'student no', 'stu number', 'local student id', 'district student id', 'stu id', 'perm id', 'permanent id'],
     },
     {
       key: 'stateID',

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { DELIMITERS, delimiterLabel, type Delimiter } from '../lib/files/delimiter'
 import { withDelimiter, withSheet } from '../lib/files/read'
 import { labelOrder } from '../lib/grouping/snapshots'
-import { presentCategories, studentKeyField } from '../lib/mapping/detect'
+import { presentCategories, studentKeyField, uncertainFields } from '../lib/mapping/detect'
 import type { UploadedFile } from '../lib/model'
 import { CATEGORY_LABELS, type Category, type SisCatalog } from '../lib/sis/types'
 import { DropZone, MAX_FILES, PrivacyStatement, Spinner } from './common'
@@ -31,7 +31,11 @@ export function FileReview({
   onCancel,
   busy,
   error,
+  notice = [],
+  focus = null,
 }: {
+  notice?: string[]
+  focus?: string | null
   files: UploadedFile[]
   catalog: SisCatalog
   onChange: (files: UploadedFile[]) => void
@@ -41,7 +45,7 @@ export function FileReview({
   busy: string | null
   error: string | null
 }) {
-  const [open, setOpen] = useState<string | null>(null)
+  const [open, setOpen] = useState<string | null>(focus)
   const labels = labelOrder(files)
   const allOk = files.length > 0 && files.every((f) => fileProblems(f, catalog).length === 0)
 
@@ -64,6 +68,13 @@ export function FileReview({
             the order shown{labels.length > 1 ? `: ${labels.join(', then ')}` : ''}.
           </span>
         </div>
+        {notice.length > 0 && (
+          <ul className="reasons" style={{ marginBottom: 12 }}>
+            {notice.map((n) => (
+              <li key={n}>{n}</li>
+            ))}
+          </ul>
+        )}
         <div className="files">
           {files.map((f, i) => {
             const cats = presentCategories(f.mapping, catalog).filter((c) => c !== 'identity')
@@ -99,7 +110,7 @@ export function FileReview({
                       value={f.label}
                       placeholder="For example, Q1"
                       maxLength={24}
-                      onChange={(e) => update(f.id, { label: e.target.value })}
+                      onChange={(e) => update(f.id, { label: e.target.value, labelSource: 'user' })}
                       style={{ width: 140 }}
                     />
                   </label>
@@ -144,6 +155,11 @@ export function FileReview({
                     {isOpen ? 'Hide columns' : 'Check columns'}
                   </button>
                 </div>
+                {problems.length === 0 && uncertainFields(f.mapping).length > 0 && (
+                  <p className="small muted" style={{ margin: 0 }}>
+                    Check the columns marked "check" below, or press Show results to use them as they are.
+                  </p>
+                )}
                 {problems.length > 0 && (
                   <ul className="reasons error">
                     {problems.map((p) => (

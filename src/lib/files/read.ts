@@ -2,11 +2,12 @@
 // headers, and auto-map columns. Spreadsheets are converted to CSV text
 // first and then take the same path. Runs entirely in the browser.
 
-import { autoMap, type ColumnMapping } from '../mapping/detect'
+import { autoMap, mapColumns, type ColumnMapping } from '../mapping/detect'
+import { PROFILE_ROWS } from '../mapping/values'
 import type { UploadedFile } from '../model'
 import type { SisCatalog } from '../sis/types'
 import { decodeText, rejectReason } from './decode'
-import { detectDelimiter, detectHeaderRow, readHeaders, type Delimiter } from './delimiter'
+import { dataLines, detectDelimiter, detectHeaderRow, readHeaders, splitLine, type Delimiter } from './delimiter'
 import { isSpreadsheet, readWorkbook, type SheetText } from './workbook'
 
 let counter = 0
@@ -30,7 +31,8 @@ const matchedCount = (m: ColumnMapping) => Object.values(m).filter((x) => x.inde
 function readLayout(text: string, delimiter: Delimiter, catalog: SisCatalog) {
   const headerLine = detectHeaderRow(text, delimiter, (h) => matchedCount(autoMap(h, catalog)))
   const headers = readHeaders(text, delimiter, headerLine)
-  return { delimiter, headerLine, headers, mapping: autoMap(headers, catalog) }
+  const rows = dataLines(text, headerLine, PROFILE_ROWS).map((line) => splitLine(line, delimiter))
+  return { delimiter, headerLine, headers, mapping: mapColumns(headers, rows, catalog) }
 }
 
 export function buildUpload(fileName: string, text: string, catalog: SisCatalog, label: string, delimiter?: Delimiter): UploadedFile {
@@ -53,10 +55,12 @@ export function withSheet(f: UploadedFile, sheetName: string, catalog: SisCatalo
 }
 
 export async function readFile(file: File, catalog: SisCatalog, fallbackLabel: string): Promise<UploadedFile> {
-  const label = guessLabel(file.name) ?? fallbackLabel
+  const guessed = guessLabel(file.name)
+  const label = guessed ?? fallbackLabel
+  const labelSource = guessed ? ('name' as const) : ('auto' as const)
   if (isSpreadsheet(file.name)) {
     try {
-      return buildWorkbookUpload(file.name, await readWorkbook(await file.arrayBuffer()), catalog, label)
+      return { ...buildWorkbookUpload(file.name, await readWorkbook(await file.arrayBuffer()), catalog, label), labelSource }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'could not be read.'
       throw new Error(msg.startsWith(file.name) ? msg : `${file.name}: ${msg}`)
@@ -65,7 +69,7 @@ export async function readFile(file: File, catalog: SisCatalog, fallbackLabel: s
   const text = decodeText(await file.arrayBuffer())
   const problem = rejectReason(text)
   if (problem) throw new Error(`${file.name}: ${problem}`)
-  return buildUpload(file.name, text, catalog, label)
+  return { ...buildUpload(file.name, text, catalog, label), labelSource }
 }
 
 /**
@@ -73,11 +77,12 @@ export async function readFile(file: File, catalog: SisCatalog, fallbackLabel: s
  * from a spreadsheet (tab delimited) or lines copied from a CSV. Same
  * delimiter detection and mapping as a file.
  */
-export function readPasted(text: string, catalog: SisCatalog, label: string, name = 'Pasted text'): UploadedFile {
+export function readPasted(text: string, catalog: SisCatalog, label: string, name = 'Pasted text', fallbackLabel = 'Snapshot 1'): UploadedFile {
   const clean = text.replace(/^\uFEFF/, '')
   const problem = rejectReason(clean)
   if (problem) throw new Error(problem.replace('This file', 'The pasted text'))
-  return buildUpload(name, clean, catalog, label.trim())
+  const given = label.trim()
+  return { ...buildUpload(name, clean, catalog, given || fallbackLabel), labelSource: given ? 'user' : 'auto' }
 }
 
 /** Re-read a file's headers with a different delimiter. */
@@ -104,7 +109,7 @@ export async function loadSamples(catalog: SisCatalog): Promise<UploadedFile[]> 
     SAMPLE_FILES.map(async ({ path, label }) => {
       const res = await fetch(`/${path}`)
       if (!res.ok) throw new Error('Could not load the sample data.')
-      return buildUpload(path.split('/').pop()!, await res.text(), catalog, label)
+      return { ...buildUpload(path.split('/').pop()!, await res.text(), catalog, label), labelSource: 'name' as const }
     }),
   )
 }
