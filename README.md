@@ -9,9 +9,12 @@ Live site: https://caselo.org
 
 ## What it does
 
-- Reads 1 to 4 exports. Each file gets a label (for example Q1 or Q2). Files
-  with the same label are combined into one snapshot, so a Q2 student file and
-  a Q2 behavior file are read together. Snapshots are compared in order.
+- Reads 1 to 4 exports. Files that are the same point in time are combined
+  into one snapshot, so a student file and a behavior file are read together.
+  Snapshots are compared in order. A label in the file name (Q2, S1, Fall)
+  sets the snapshot and its order. Without one, files holding different data
+  are combined, and Caselo asks only when files look like more than one
+  point in time and it can't tell their order.
 - Reads delimited text (CSV, tab, pipe, or caret), Excel and OpenDocument
   spreadsheets (.xlsx, .xls, .xlsm, .ods), or text pasted into the page.
   A spreadsheet is converted to CSV text in the browser. When a workbook has
@@ -20,8 +23,11 @@ Live site: https://caselo.org
 - Detects the delimiter and finds the header row, skipping a report title,
   a "generated on" line, or blank lines above it. The file review shows
   which line was used as the header.
-- Matches columns to known fields. The detected mapping is shown so you can
-  confirm or correct it, and a mapping can be downloaded as JSON and loaded
+- Matches columns to known fields by name and by the values in each column,
+  so a "Grade" column of A, B, C is read as course grades, not grade level.
+  When every file is clear, Caselo goes straight to results, with a link to
+  a page showing how each file was read. When a column is uncertain, the
+  review page opens on it. A mapping can be downloaded as JSON and loaded
   again later.
 - Detects whether a file has one row per student or many (behavior incidents,
   attendance marks, course grades) and groups many-row files by student.
@@ -139,7 +145,10 @@ knowledge base articles. Districts can rename columns, so each field also has
 aliases for fuzzy matching: the labels Infinite Campus shows in Filter
 Designer (for example "Absenteeism Percentage") and plain-language names (for
 example "Grade Level" or "Absence %"). Header names are matched without
-regard to case.
+regard to case, and `student_grade` is read the same as `student.grade`.
+The first 200 rows of each column are then checked against the field
+(grade levels, letter grades, dates, Y/N flags, GPAs, percentages), which
+confirms a close name match or rules it out. This happens in the browser.
 
 | Category | Default headers |
 |---|---|

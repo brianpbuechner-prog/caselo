@@ -10,6 +10,11 @@ export interface UploadedFile {
   id: string
   fileName: string
   label: string
+  /**
+   * Where the label came from: the file name ("name"), the person ("user"),
+   * or a placeholder Caselo may replace when grouping ("auto").
+   */
+  labelSource?: 'name' | 'user' | 'auto'
   text: string
   delimiter: Delimiter
   /** Zero-based record index of the header row. Records before it are skipped. */
