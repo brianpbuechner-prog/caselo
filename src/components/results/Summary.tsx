@@ -17,17 +17,13 @@ export function Summary({
   onShowStudents: (f: Partial<ListFilter>) => void
 }) {
   const latest = results.summaries[results.summaries.length - 1]
-  const noFlags = latest.tiers[1]
   const tr = results.transitions
   return (
     <section className="summary" aria-label="Caseload summary">
-      <h1 className="headline num">
-        {noFlags} of {latest.students} students have no signals.
+      <h1 className="headline">
+        <span className="num">{latest.tiers[3]}</span> {latest.tiers[3] === 1 ? 'needs' : 'need'} support now and{' '}
+        <span className="num">{latest.tiers[2]}</span> {latest.tiers[2] === 1 ? 'is' : 'are'} worth a check-in, from {latest.label}.
       </h1>
-      <p className="headline-sub num">
-        {latest.tiers[3]} {latest.tiers[3] === 1 ? 'needs' : 'need'} support now and {latest.tiers[2]} {latest.tiers[2] === 1 ? 'is' : 'are'} worth a
-        check-in, from {latest.label}.
-      </p>
       <TierBar
         tiers={latest.tiers}
         total={latest.students}
