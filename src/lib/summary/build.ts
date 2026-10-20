@@ -67,6 +67,16 @@ function categoryCells(rules: RuleCategory[], count: (c: RuleCategory) => number
   return out
 }
 
+/**
+ * The tier rule in the summary's original wording. The summary is what the
+ * AI draft sends, and its server check expects this form, so the on-screen
+ * language change leaves it as is. The prompt tells the model which words
+ * to use.
+ */
+export function summaryTierText(t: Thresholds): string {
+  return `Tier 1: ${t.tier2MinFlags === 1 ? 'no flags' : `fewer than ${t.tier2MinFlags} flags`}. Tier 2: ${t.tier2MinFlags} or more ${t.tier2MinFlags === 1 ? 'flag' : 'flags'}. Tier 3: ${t.tier3MinFlags} or more.`
+}
+
 export function buildSummary(results: Results, t: Thresholds): DeidentifiedSummary {
   const last = results.summaries.length - 1
   const latest = results.summaries[last]
@@ -135,7 +145,7 @@ export function buildSummary(results: Results, t: Thresholds): DeidentifiedSumma
     rules,
     missingRules: results.missingRules,
     ruleText: rules.map((c) => desc[c]),
-    tierText: desc.tiers,
+    tierText: summaryTierText(t),
     tiers,
     flagged,
     pairs,

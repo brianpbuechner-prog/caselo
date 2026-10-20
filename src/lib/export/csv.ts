@@ -2,7 +2,7 @@
 // Nothing is uploaded. The file goes straight to the user's Downloads folder.
 
 import type { StudentResult } from '../compare/analyze'
-import { CHANGE_LABELS } from '../compare/analyze'
+import { DIRECTION_LABELS, TIER_NAMES } from '../language'
 import { ATTENDANCE_METHOD_LABELS, RULE_LABELS } from '../rules/engine'
 
 function cell(v: unknown): string {
@@ -14,6 +14,7 @@ function cell(v: unknown): string {
 export function resultsToCsv(students: StudentResult[], labels: string[]): string {
   const multi = labels.length > 1
   const header = [
+    'Support',
     'Tier',
     'Last name',
     'First name',
@@ -25,18 +26,20 @@ export function resultsToCsv(students: StudentResult[], labels: string[]): strin
     'GPA',
     'Failing courses',
     'Behavior incidents',
-    'Flags',
+    'Signals',
     'Reasons',
+    'Close to a line',
   ]
   if (multi) {
     for (const l of labels) header.push(`Tier ${l}`, `Absence % ${l}`)
-    header.push('Change')
+    header.push('Direction', 'Direction reasons')
   }
   const lines = [header.map(cell).join(',')]
   for (const s of students) {
     const e = s.latest
     const r = e.row
     const line: unknown[] = [
+      TIER_NAMES[e.tier],
       e.tier,
       r.lastName,
       r.firstName,
@@ -50,10 +53,11 @@ export function resultsToCsv(students: StudentResult[], labels: string[]): strin
       e.incidents ?? '',
       e.flags.map((f) => RULE_LABELS[f.category]).join('; '),
       e.flags.map((f) => f.reason).join(' | '),
+      s.near.join(' | '),
     ]
     if (multi) {
       for (const h of s.history) line.push(h?.tier ?? '', h?.absencePct == null ? '' : h.absencePct.toFixed(1))
-      line.push(s.change ? CHANGE_LABELS[s.change] : '')
+      line.push(s.change === 'new' ? 'New' : s.movement ? DIRECTION_LABELS[s.movement.direction] : '', s.movement?.reasons.join(' | ') ?? '')
     }
     lines.push(line.map(cell).join(','))
   }

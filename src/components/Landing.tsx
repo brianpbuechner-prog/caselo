@@ -29,7 +29,7 @@ export function Landing({
   return (
     <div className="landing-main">
       <h1 className="wordmark">Caselo</h1>
-      <p className="tagline">Upload a student information system export to see which students may need support, and why.</p>
+      <p className="tagline">Upload a student information system export to see who needs support now, who is slipping before any rule catches it, and why.</p>
       {pasting ? (
         <div className="paste">
           <label className="field">

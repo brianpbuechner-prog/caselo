@@ -1,4 +1,4 @@
-// The full student list. Values that caused a flag are marked; selecting
+// The full student list. Values that caused a signal are marked; selecting
 // one shows the rule. Selecting a name opens that student's detail.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -6,6 +6,7 @@ import { gradeSortValue, newlyFlagged, type ChangeStatus, type Results, type Stu
 import { downloadText, resultsToCsv } from '../../lib/export/csv'
 import { RULE_CATEGORIES, RULE_LABELS, type MarkedValue, type RuleCategory } from '../../lib/rules/engine'
 import { comboKey } from '../../lib/compare/insights'
+import { DIRECTION_LABELS, TIER_NAMES, TIER_SHORT, type Direction } from '../../lib/language'
 import type { TierFilter } from './TierBar'
 
 export interface ListFilter {
@@ -19,9 +20,17 @@ export interface ListFilter {
   resolved: RuleCategory | null
   /** An exact set of flags, as made by comboKey. */
   combo: string | null
+  /** Direction since the last snapshot. "quiet" is slipping with no signals; "near" is close to a line. */
+  direction: 'all' | Direction | 'quiet' | 'near'
 }
 
-export const DEFAULT_FILTER: ListFilter = { search: '', tier: 'all', flag: 'any', grade: 'all', change: 'all', newly: null, resolved: null, combo: null }
+export const DEFAULT_FILTER: ListFilter = { search: '', tier: 'all', flag: 'any', grade: 'all', change: 'all', newly: null, resolved: null, combo: null, direction: 'all' }
+
+export const DIRECTION_FILTER_LABELS: Record<Exclude<ListFilter['direction'], 'all'>, string> = {
+  quiet: 'Slipping, no signals yet',
+  near: 'Close to a line',
+  ...DIRECTION_LABELS,
+}
 
 type SortKey = 'priority' | 'name' | 'grade' | 'absence' | 'gpa' | 'failing' | 'incidents' | 'change'
 
@@ -49,12 +58,8 @@ function prioritySort(a: StudentResult, b: StudentResult): number {
   )
 }
 
-const CHANGE_SHORT: Record<ChangeStatus, string> = {
-  up: 'Up',
-  down: 'Down',
-  same: '',
-  new: 'New',
-}
+const DIRECTION_RANK: Record<string, number> = { slipping: 0, new: 1, finding: 2, growing: 3, steady: 4 }
+const directionKey = (s: StudentResult) => (s.change === 'new' ? 'new' : (s.movement?.direction ?? 'steady'))
 
 export function StudentList({
   results,
@@ -96,10 +101,12 @@ export function StudentList({
       if (filter.newly && !newlyFlagged(s, filter.newly)) return false
       if (filter.resolved && !(hasFlag(s.previous, filter.resolved) && !hasFlag(e, filter.resolved))) return false
       if (filter.combo && comboKey(e.flags.map((f) => f.category)) !== filter.combo) return false
+      if (filter.direction === 'quiet' && !(e.flags.length === 0 && s.movement?.direction === 'slipping')) return false
+      if (filter.direction === 'near' && s.near.length === 0) return false
+      if (filter.direction !== 'all' && filter.direction !== 'quiet' && filter.direction !== 'near' && s.movement?.direction !== filter.direction) return false
       return true
     })
     const d = sort.dir
-    const changeRank: Record<string, number> = { up: 0, new: 1, same: 2, down: 3 }
     const sorters: Record<SortKey, (a: StudentResult, b: StudentResult) => number> = {
       priority: (a, b) => prioritySort(a, b) * d,
       name: (a, b) => name(a).localeCompare(name(b)) * d,
@@ -108,7 +115,7 @@ export function StudentList({
       gpa: (a, b) => cmpNum(a.latest.gpa, b.latest.gpa, d) || prioritySort(a, b),
       failing: (a, b) => (b.latest.failingCourses.length - a.latest.failingCourses.length) * d || prioritySort(a, b),
       incidents: (a, b) => cmpNum(a.latest.incidents, b.latest.incidents, -d) || prioritySort(a, b),
-      change: (a, b) => ((changeRank[a.change ?? 'same'] ?? 9) - (changeRank[b.change ?? 'same'] ?? 9)) * d || prioritySort(a, b),
+      change: (a, b) => ((DIRECTION_RANK[directionKey(a)] ?? 9) - (DIRECTION_RANK[directionKey(b)] ?? 9)) * d || prioritySort(a, b),
     }
     return [...list].sort(sorters[sort.key])
   }, [results, filter, sort])
@@ -123,7 +130,13 @@ export function StudentList({
   )
 
   const filtered = rows.length !== results.students.length
-  const changeValue = filter.newly ? `newly-${filter.newly}` : filter.resolved ? `resolved-${filter.resolved}` : filter.change
+  const changeValue = filter.newly
+    ? `newly-${filter.newly}`
+    : filter.resolved
+      ? `resolved-${filter.resolved}`
+      : filter.direction !== 'all'
+        ? `dir-${filter.direction}`
+        : filter.change
 
   return (
     <section className="card list" aria-label="All students">
@@ -135,14 +148,14 @@ export function StudentList({
           value={filter.search}
           onChange={(e) => onFilter({ search: e.target.value })}
         />
-        <select aria-label="Flag" value={filter.flag} onChange={(e) => onFilter({ flag: e.target.value as ListFilter['flag'] })}>
-          <option value="any">All flags</option>
+        <select aria-label="Signal" value={filter.flag} onChange={(e) => onFilter({ flag: e.target.value as ListFilter['flag'] })}>
+          <option value="any">All signals</option>
           {RULE_CATEGORIES.filter((c) => latest.rules[c]).map((c) => (
             <option key={c} value={c}>
               {RULE_LABELS[c]}
             </option>
           ))}
-          <option value="none">No flags</option>
+          <option value="none">No signals</option>
         </select>
         <select aria-label="Grade" value={filter.grade} onChange={(e) => onFilter({ grade: e.target.value })}>
           <option value="all">All grades</option>
@@ -152,33 +165,42 @@ export function StudentList({
             </option>
           ))}
         </select>
-        {multi && (
-          <select
-            aria-label="Change"
-            value={changeValue}
-            onChange={(e) => {
-              const v = e.target.value
-              if (v.startsWith('newly-')) onFilter({ change: 'all', newly: v.slice(6) as RuleCategory, resolved: null })
-              else if (v.startsWith('resolved-')) onFilter({ change: 'all', newly: null, resolved: v.slice(9) as RuleCategory })
-              else onFilter({ change: v as ListFilter['change'], newly: null, resolved: null })
-            }}
-          >
-            <option value="all">Any change</option>
-            <option value="up">Moved up a tier</option>
-            <option value="down">Moved down a tier</option>
-            <option value="new">New in {latest.label}</option>
-            {results.transitions?.comparable.map((c) => (
-              <option key={c} value={`newly-${c}`}>
-                Newly flagged: {RULE_LABELS[c].toLowerCase()}
-              </option>
-            ))}
-            {results.transitions?.comparable.map((c) => (
-              <option key={c} value={`resolved-${c}`}>
-                No longer flagged: {RULE_LABELS[c].toLowerCase()}
-              </option>
-            ))}
-          </select>
-        )}
+        <select
+          aria-label="Direction"
+          value={changeValue}
+          onChange={(e) => {
+            const v = e.target.value
+            const reset = { change: 'all' as const, newly: null, resolved: null, direction: 'all' as const }
+            if (v.startsWith('newly-')) onFilter({ ...reset, newly: v.slice(6) as RuleCategory })
+            else if (v.startsWith('resolved-')) onFilter({ ...reset, resolved: v.slice(9) as RuleCategory })
+            else if (v.startsWith('dir-')) onFilter({ ...reset, direction: v.slice(4) as ListFilter['direction'] })
+            else onFilter({ ...reset, change: v as ListFilter['change'] })
+          }}
+        >
+          <option value="all">{multi ? 'Any direction' : 'Everyone'}</option>
+          {multi ? (
+            <>
+              <option value="dir-quiet">{DIRECTION_FILTER_LABELS.quiet}</option>
+              <option value="dir-slipping">Slipping</option>
+              <option value="dir-finding">Finding footing</option>
+              <option value="dir-growing">Growing</option>
+              <option value="dir-steady">Steady</option>
+              <option value="new">New in {latest.label}</option>
+              {results.transitions?.comparable.map((c) => (
+                <option key={c} value={`newly-${c}`}>
+                  New {RULE_LABELS[c].toLowerCase()} signal
+                </option>
+              ))}
+              {results.transitions?.comparable.map((c) => (
+                <option key={c} value={`resolved-${c}`}>
+                  {RULE_LABELS[c]} signal cleared
+                </option>
+              ))}
+            </>
+          ) : (
+            <option value="dir-near">{DIRECTION_FILTER_LABELS.near}</option>
+          )}
+        </select>
         <span className="count num" role="status">
           {filtered ? `${rows.length} of ${results.students.length}` : rows.length} students
         </span>
@@ -206,7 +228,7 @@ export function StudentList({
         <table className={compact ? 'compact' : undefined}>
           <thead>
             <tr>
-              {head('priority', 'Tier')}
+              {head('priority', 'Support')}
               {head('name', 'Student')}
               {head('grade', 'Grade')}
               {show.absence && head('absence', 'Absent', true)}
@@ -230,12 +252,12 @@ export function StudentList({
           </tbody>
         </table>
       </div>
-      <p className="list-foot small muted">Marked values caused a flag. Select one to see the rule, or a name to see the student.</p>
+      <p className="list-foot small muted">Marked values caused a signal. Select one to see the rule, or a name to see the student.</p>
     </section>
   )
 }
 
-/** A value cell. When the value caused a flag it is marked and opens its rule. */
+/** A value cell. When the value caused a signal it is marked and opens its rule. */
 function Value({ text, mark, history }: { text: string; mark?: string; history?: string | null }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLSpanElement>(null)
@@ -303,7 +325,9 @@ function Row({
   return (
     <tr className={e.tier === 1 ? 'calm' : undefined}>
       <td>
-        <span className={`tier tier-${e.tier}`}>Tier {e.tier}</span>
+        <span className={`tier tier-${e.tier}`} title={`${TIER_NAMES[e.tier]} (Tier ${e.tier})`}>
+          {TIER_SHORT[e.tier]}
+        </span>
       </td>
       <td>
         <button className="student-name" onClick={onOpen}>
@@ -330,16 +354,15 @@ function Row({
       {show.incidents && <Value text={e.incidents == null ? '' : String(e.incidents)} mark={e.marks.incidents} />}
       {multi && (
         <td>
-          {s.change && CHANGE_SHORT[s.change] && (
-            <span className="small">
-              {CHANGE_SHORT[s.change]}
-              {s.comparableTiers && s.change !== 'same' && (
-                <span className="muted">
-                  {' '}
-                  from Tier {s.comparableTiers.previous}
-                </span>
-              )}
-            </span>
+          {s.change === 'new' ? (
+            <span className="small">New</span>
+          ) : (
+            s.movement &&
+            s.movement.direction !== 'steady' && (
+              <span className={`small dir dir-${s.movement.direction}`} title={s.movement.reasons.join('. ')}>
+                {DIRECTION_LABELS[s.movement.direction]}
+              </span>
+            )
           )}
         </td>
       )}

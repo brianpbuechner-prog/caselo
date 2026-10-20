@@ -1,4 +1,4 @@
-// Patterns: where flags concentrate, how they overlap, and how the
+// Patterns: where signals concentrate, how they overlap, and how the
 // caseload is spread around each rule. Each figure's title states what
 // the numbers show; the line under it says what is plotted.
 //
@@ -133,10 +133,10 @@ function GradeGrid({ results, onShowStudents }: { results: Results; onShowStuden
     <Figure
       title={
         top
-          ? `Grade ${top.grade} has the largest share of students in Tier 3, ${Math.round(top.rate * 100)}%.`
-          : 'Flags by grade.'
+          ? `Grade ${top.grade} has the largest share of students who need support now, ${Math.round(top.rate * 100)}%.`
+          : 'Signals by grade.'
       }
-      sub="Share of each grade that is flagged, with the number of students. Darker is a higher share."
+      sub="Share of each grade with each signal, with the number of students. Darker is a higher share."
       foot={small ? `Grades under ${MIN_GROUP} students are shown but not compared in the title.` : undefined}
     >
       <div className="table-wrap">
@@ -148,7 +148,7 @@ function GradeGrid({ results, onShowStudents }: { results: Results; onShowStuden
               {cats.map((c) => (
                 <th key={c}>{RULE_LABELS[c]}</th>
               ))}
-              <th>Tier 3</th>
+              <th>Support now</th>
             </tr>
           </thead>
           <tbody>
@@ -159,7 +159,7 @@ function GradeGrid({ results, onShowStudents }: { results: Results; onShowStuden
                 {cats.map((c) => (
                   <Cell key={c}>{cell(g.flagged[c], g.students, areaPhrase(c), { grade: g.grade, flag: c })}</Cell>
                 ))}
-                <Cell>{cell(g.tiers[3], g.students, 'in Tier 3', { grade: g.grade, tier: '3' })}</Cell>
+                <Cell>{cell(g.tiers[3], g.students, 'needing support now', { grade: g.grade, tier: '3' })}</Cell>
               </tr>
             ))}
           </tbody>
@@ -200,9 +200,9 @@ function OverlapFigure({
       title={
         s
           ? `${s.both} of the ${s.total} students ${areaPhrase(s.of)} are also ${areaPhrase(s.also)}.`
-          : 'How flags combine.'
+          : 'How signals combine.'
       }
-      sub={`The ${o.flagged} flagged students, by which flags they have.`}
+      sub={`The ${o.flagged} students with signals, by which signals they have.`}
       foot={ruleDescriptions(thresholds).tiers}
     >
       <ul className="bars">

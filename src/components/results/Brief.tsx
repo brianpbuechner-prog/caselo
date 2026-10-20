@@ -11,7 +11,7 @@ import { studentName, type ListFilter } from './StudentList'
 
 const pct = (r: number) => `${Math.round(r * 100)}%`
 
-/** The values that caused this student's flags, as short phrases. */
+/** The values that caused this student's signals, as short phrases. */
 export function flaggedValues(s: StudentResult): string[] {
   const e = s.latest
   const out: string[] = []
@@ -69,7 +69,7 @@ export function Brief({
     <section className="brief" aria-label="Start here">
       <h2 className="brief-title">Start here</h2>
       {students.length === 0 ? (
-        <p className="muted small">No students are flagged.</p>
+        <p className="muted small">No students have signals.</p>
       ) : (
         <ol className="brief-list">
           {students.map((s) => (
@@ -78,7 +78,7 @@ export function Brief({
                 <span className="brief-name">
                   {studentName(s)}
                   <span className="muted"> Grade {s.latest.row.grade ?? 'unknown'}</span>
-                  {s.change === 'up' && results.transitions && <span className="tag look">Tier rose since {results.transitions.from}</span>}
+                  {s.change === 'up' && results.transitions && <span className="tag look">More signals since {results.transitions.from}</span>}
                 </span>
                 <span className="brief-values num">{flaggedValues(s).join(', ')}</span>
               </button>
@@ -90,7 +90,7 @@ export function Brief({
         {START_HERE_ORDER}{' '}
         {flagged > students.length && (
           <button className="link" onClick={() => onShowStudents({ tier: latest.tiers[3] > 0 ? '3' : '2' })}>
-            See all {latest.tiers[3] > 0 ? `${latest.tiers[3]} in Tier 3` : `${latest.tiers[2]} in Tier 2`}
+            See all {latest.tiers[3] > 0 ? `${latest.tiers[3]} who need support now` : `${latest.tiers[2]} worth a check-in`}
           </button>
         )}
       </p>

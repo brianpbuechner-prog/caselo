@@ -1,7 +1,7 @@
-// Top of the results page: the win first, the tier bar, then what changed
-// since the previous snapshot.
+// Top of the results page: the win first, the support bar, then what
+// changed since the previous snapshot.
 
-import { areaPhrase } from '../../lib/compare/insights'
+import { withDirection } from '../../lib/compare/insights'
 import type { Results } from '../../lib/compare/analyze'
 import { RULE_LABELS } from '../../lib/rules/engine'
 import type { ListFilter } from './StudentList'
@@ -22,10 +22,11 @@ export function Summary({
   return (
     <section className="summary" aria-label="Caseload summary">
       <h1 className="headline num">
-        {noFlags} of {latest.students} students have no flags.
+        {noFlags} of {latest.students} students have no signals.
       </h1>
       <p className="headline-sub num">
-        {latest.tiers[3]} in Tier 3 and {latest.tiers[2]} in Tier 2, from {latest.label}.
+        {latest.tiers[3]} {latest.tiers[3] === 1 ? 'needs' : 'need'} support now and {latest.tiers[2]} {latest.tiers[2] === 1 ? 'is' : 'are'} worth a
+        check-in, from {latest.label}.
       </p>
       <TierBar
         tiers={latest.tiers}
@@ -40,14 +41,17 @@ export function Summary({
             {tr.comparable.map((c) => (
               <li key={c}>
                 <span className="since-area">{RULE_LABELS[c]}</span>
-                <Move n={tr.noLongerFlagged[c]} text={`no longer ${areaPhrase(c)}`} onClick={() => onShowStudents({ resolved: c })} />
-                <Move n={tr.newlyFlagged[c]} text={`newly ${areaPhrase(c)}`} look onClick={() => onShowStudents({ newly: c })} />
+                <Move n={tr.noLongerFlagged[c]} text={tr.noLongerFlagged[c] === 1 ? 'signal cleared' : 'signals cleared'} onClick={() => onShowStudents({ resolved: c })} />
+                <Move n={tr.newlyFlagged[c]} text={tr.newlyFlagged[c] === 1 ? 'new signal' : 'new signals'} look onClick={() => onShowStudents({ newly: c })} />
               </li>
             ))}
             <li>
-              <span className="since-area">Tiers</span>
-              <Move n={tr.tierDown} text="moved down a tier" onClick={() => onShowStudents({ change: 'down' })} />
-              <Move n={tr.tierUp} text="moved up a tier" look onClick={() => onShowStudents({ change: 'up' })} />
+              <span className="since-area">Direction</span>
+              <span className="since-pair">
+                <Move n={withDirection(results, 'finding').length} text="finding footing" onClick={() => onShowStudents({ direction: 'finding' })} />
+                <Move n={withDirection(results, 'growing').length} text="growing" onClick={() => onShowStudents({ direction: 'growing' })} />
+              </span>
+              <Move n={withDirection(results, 'slipping').length} text="slipping" look onClick={() => onShowStudents({ direction: 'slipping' })} />
             </li>
           </ul>
           <p className="small muted num">
@@ -78,7 +82,7 @@ export function MissingLine({ results, warnings }: { results: Results; warnings:
     <div className="missing small">
       {results.missingRules.length > 0 && (
         <span>
-          Not in your {latest.label} files: {results.missingRules.map((c) => RULE_LABELS[c].toLowerCase()).join(', ')}. No student is flagged for{' '}
+          Not in your {latest.label} files: {results.missingRules.map((c) => RULE_LABELS[c].toLowerCase()).join(', ')}. No signals can come from{' '}
           {results.missingRules.length === 1 ? 'it' : 'them'}.
         </span>
       )}

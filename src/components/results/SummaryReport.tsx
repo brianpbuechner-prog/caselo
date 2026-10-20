@@ -10,6 +10,7 @@ import { useState } from 'react'
 import type { DraftState } from '../../lib/ai/types'
 import type { Results } from '../../lib/compare/analyze'
 import { areaPhrase } from '../../lib/compare/insights'
+import { TIER_NAMES, tierWithEquivalent } from '../../lib/language'
 import { RULE_LABELS, type RuleCategory } from '../../lib/rules/engine'
 import { TIERS, type DeidentifiedSummary } from '../../lib/summary/build'
 import { cellText, MIN_CELL, rateText, type Cell } from '../../lib/summary/suppress'
@@ -36,7 +37,18 @@ function RateChange({ before, after }: { before: Cell; after: Cell }) {
   return <>{`${cellText(before)} → ${cellText(after)}`}</>
 }
 
-export function SummaryReport({ results, summary: s, draft }: { results: Results; summary: DeidentifiedSummary; draft: DraftState | null }) {
+export function SummaryReport({
+  results,
+  summary: s,
+  draft,
+  tierText,
+}: {
+  results: Results
+  summary: DeidentifiedSummary
+  draft: DraftState | null
+  /** The support-level rule in Caselo's words. */
+  tierText: string
+}) {
   const [today] = useState(() => new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }))
 
   const allTiersShown = TIERS.every((k) => s.tiers[k].kind === 'shown')
@@ -57,7 +69,7 @@ export function SummaryReport({ results, summary: s, draft }: { results: Results
 
         <div className="report-grid">
           <section className="report-block">
-            <h2>Tiers</h2>
+            <h2>Support levels</h2>
             {allTiersShown && (
               <div className="report-bar" aria-hidden="true">
                 {TIERS.map((k) => (
@@ -68,17 +80,17 @@ export function SummaryReport({ results, summary: s, draft }: { results: Results
             <div className="report-tiers num">
               {TIERS.map((k) => (
                 <div key={k}>
-                  <span className="small muted">Tier {k}</span>
+                  <span className="small muted">{tierWithEquivalent(k)}</span>
                   <span className="big">{cellText(s.tiers[k])}</span>
                   <span className="small muted">{rateText(s.tiers[k]) || ' '}</span>
                 </div>
               ))}
             </div>
-            <p className="small muted">{s.tierText}</p>
+            <p className="small muted">{tierText}</p>
           </section>
 
           <section className="report-block">
-            <h2>Students flagged, by area</h2>
+            <h2>Students with signals, by area</h2>
             <div className="report-areas num">
               {s.rules.map((c) => {
                 const cell = s.flagged[c]!
@@ -96,8 +108,8 @@ export function SummaryReport({ results, summary: s, draft }: { results: Results
               })}
             </div>
             <p className="small muted">
-              A student can be flagged in more than one area.
-              {topPair && topPair.cell.kind === 'shown' && ` Flagged together most often: ${list(topPair.categories)} (${topPair.cell.count} students).`}
+              A student can have signals in more than one area.
+              {topPair && topPair.cell.kind === 'shown' && ` Signals that appear together most often: ${list(topPair.categories)} (${topPair.cell.count} students).`}
               {otherPairs.length > 0 && otherPairs.every((p) => p.cell.kind !== 'shown') && ` Other pairs: <${MIN_CELL} each.`}
               {otherPairs
                 .filter((p) => p.cell.kind === 'shown')
@@ -118,14 +130,14 @@ export function SummaryReport({ results, summary: s, draft }: { results: Results
                     <RateChange before={s.change!.previous[c]!} after={s.change!.latest[c]!} />
                   </span>
                   <span className="small muted">
-                    {cellText(s.change!.newlyFlagged[c]!)} newly, {cellText(s.change!.noLongerFlagged[c]!)} no longer
+                    {cellText(s.change!.newlyFlagged[c]!)} new, {cellText(s.change!.noLongerFlagged[c]!)} cleared
                   </span>
                 </div>
               ))}
               <div className="report-change">
-                <span className="small muted">Moved up a tier</span>
+                <span className="small muted">More signals than before</span>
                 <span className="mid">{cellText(s.change.tierUp)}</span>
-                <span className="small muted">{cellText(s.change.tierDown)} moved down</span>
+                <span className="small muted">{cellText(s.change.tierDown)} with fewer</span>
               </div>
             </div>
             <p className="small muted num">
@@ -145,7 +157,7 @@ export function SummaryReport({ results, summary: s, draft }: { results: Results
                   <th>Grade</th>
                   <th>Students</th>
                   {TIERS.map((k) => (
-                    <th key={k}>Tier {k}</th>
+                    <th key={k}>{TIER_NAMES[k]}</th>
                   ))}
                   {s.rules.map((c) => (
                     <th key={c}>{RULE_LABELS[c]}</th>
@@ -183,7 +195,7 @@ export function SummaryReport({ results, summary: s, draft }: { results: Results
 
         <footer className="report-foot small muted">
           <span>
-            <strong>Rules used.</strong> {[...s.ruleText, s.tierText].join(' ')}
+            <strong>Rules used.</strong> {[...s.ruleText, tierText].join(' ')}
           </span>
           <span>
             Prepared with Caselo (caselo.org) from {labelsUsed} exports. Made in the browser; no student data was uploaded.

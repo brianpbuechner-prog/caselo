@@ -1,9 +1,37 @@
 # Caselo
 
 Caselo is an open source, browser-only tool for school counselors. It reads a
-student information system (SIS) export, flags students who may need support
-using rules you can see and adjust, and sorts them into tiers. With more than
-one export from different points in the year, it also shows what changed.
+student information system (SIS) export and shows who needs support now, using
+rules you can see and adjust. With more than one export from different points
+in the year, it shows which way each student is heading, including students
+who are slipping before any rule catches them.
+
+## The words it uses
+
+Caselo uses plain words in place of tiers and flags. Describe the situation,
+not the student.
+
+| On screen | MTSS equivalent |
+|---|---|
+| Needs support now | Tier 3 (2 or more signals) |
+| Worth a check-in | Tier 2 (1 signal) |
+| No signals | Tier 1 |
+| Signal | Flag: one area (attendance, academics, behavior) past a line |
+
+Direction, between two snapshots:
+
+- **Slipping:** a new signal, or absence up 3 or more points, GPA down 0.3
+  or more, or more behavior incidents.
+- **Finding footing:** fewer signals than last time.
+- **Growing:** moved away from a line, with nothing moving toward one.
+- **Steady:** everything else.
+
+Attendance changes count only once both snapshots cover 20 or more school
+days, so early-year swings aren't read as slipping. With one snapshot,
+Caselo shows students with no signals who are close to a line instead. All
+of these amounts are in Rules. Tier numbers stay in Rules and the CSV export
+for MTSS teams. In code, signals are still `flags` and support levels are
+still `tiers`.
 
 Live site: https://caselo.org
 
@@ -36,12 +64,13 @@ Live site: https://caselo.org
   - Academics: GPA below 2.0, or one or more failing course grades when
     course grades are in the file.
   - Behavior: 3 or more incidents.
-- Assigns Tier 1 (no flags), Tier 2 (1 flag), or Tier 3 (2 or more flags).
-  A student gets at most one flag per category.
-- Shows the results on one page: how many students have no flags and what
-  changed since the last snapshot, a short "start here" section, patterns
-  (flag rates by grade, how flags overlap, and how students are spread around
-  each rule), and the full student list with the rule behind every flag.
+- Sorts students into Needs support now (2 or more signals), Worth a check-in
+  (1 signal), or No signals. A student gets at most one signal per area.
+- Shows the results on one page: how many students have no signals and what
+  changed since the last snapshot, a short "start here" section, "Slipping,
+  no signals yet" (or "Close to a line" with one snapshot), patterns (signal
+  rates by grade, how signals overlap, and how students are spread around
+  each rule), and the full student list with the rule behind every signal.
   Selecting a student shows their values in every snapshot. The list exports
   to CSV in the browser.
 - The "start here" section depends on the role chosen. Counselors see five

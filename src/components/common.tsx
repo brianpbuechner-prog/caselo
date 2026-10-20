@@ -107,7 +107,15 @@ export function About({ onClose }: { onClose: () => void }) {
       <h2>About Caselo</h2>
       <p>
         Caselo was created by Brian Buechner, a licensed Minnesota school counselor. It reads a student information
-        system export and shows which students may need support, with the reason for each flag.
+        system export and shows who needs support now, who is slipping before any rule catches it, and the reason
+        for each.
+      </p>
+      <p>
+        <strong>The words it uses.</strong> In place of tiers and flags: <em>Needs support now</em> (Tier 3),{' '}
+        <em>Worth a check-in</em> (Tier 2), and <em>No signals</em> (Tier 1). A signal is one area (attendance,
+        academics, or behavior) past a line. With two snapshots, each student's direction is <em>Growing</em>,{' '}
+        <em>Steady</em>, <em>Slipping</em>, or <em>Finding footing</em>. The words describe the situation, not the
+        student, and tier numbers stay available for MTSS teams in Rules and the CSV export.
       </p>
       <p>
         <strong>How your data is handled.</strong> Caselo has no database or accounts. Files are read in this browser

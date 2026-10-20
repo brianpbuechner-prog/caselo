@@ -257,6 +257,7 @@ tbody tr:hover td { background: #fafbfb; }
 .since-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 14px; }
 .since-list li { display: grid; grid-template-columns: 96px 1fr 1fr; gap: 12px; align-items: baseline; }
 .since-area { color: var(--muted); }
+.since-pair { display: flex; flex-wrap: wrap; gap: 0 14px; }
 .move { font: inherit; text-align: left; background: none; border: 0; padding: 2px 0; color: var(--text); cursor: pointer; }
 .move b { font-weight: 650; }
 button.move:hover { text-decoration: underline; text-underline-offset: 3px; }
@@ -535,3 +536,18 @@ tr.calm .student-name { color: var(--text); font-weight: 400; }
   .results-page > .draft-print { margin-top: 24px; }
 }
 .ai > *, .ai-output > *, .draft-tabs, .draft-tabs > * { min-width: 0; }
+
+/* Slipping, no signals yet */
+.slipping { background: var(--subtle); border-radius: 16px; padding: 20px 22px 16px; margin: 28px 0 8px; }
+.slipping-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin-bottom: 6px; }
+.slipping-head .brief-title { margin-bottom: 0; }
+.slipping-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); column-gap: 32px; }
+.slipping-list li { border-top: 1px solid #e3e6e9; }
+.brief-row.plain { grid-template-columns: 1fr; }
+.brief-row.plain::before { content: none; }
+.brief-row.plain .brief-values { grid-column: 1; }
+.dir { white-space: nowrap; }
+.dir-slipping { color: var(--accent-strong); font-weight: 600; }
+.dir-finding, .dir-growing { color: var(--text); }
+.detail-direction { display: flex; gap: 10px; align-items: baseline; margin-top: 8px; }
+.detail-direction .tag { flex: none; }

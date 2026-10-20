@@ -48,6 +48,20 @@ Every count is a cell with `kind`, `count`, and `rate`:
 - `"kind": "hidden"`: hidden so a small count cannot be worked out by
   subtraction. Shown to the counselor as "*". The number is unknown.
 
+## Words
+
+Caselo uses its own words for tiers and flags. Use them in everything you
+write:
+
+- Tier 3 is "needs support now". Tier 2 is "worth a check-in". Tier 1 is
+  "no signals". Add the tier number in parentheses only where an MTSS team
+  would need it, for example in a `do` step ("students who need support now
+  (Tier 3)").
+- A flag is a "signal". Say "students with an attendance signal", not
+  "flagged students".
+- Describe the situation, not the student: "attendance is slipping in
+  grade 7", not "slipping students".
+
 ## Numbers
 
 1. Use only numbers that are in the input. Write counts exactly as given.

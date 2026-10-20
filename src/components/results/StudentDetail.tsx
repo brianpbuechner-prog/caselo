@@ -4,6 +4,7 @@
 import { ruleDescriptions, type Thresholds } from '../../config/rules'
 import type { Results, StudentResult } from '../../lib/compare/analyze'
 import { ATTENDANCE_METHOD_LABELS, RULE_CATEGORIES, RULE_LABELS, type Evaluation, type RuleCategory } from '../../lib/rules/engine'
+import { DIRECTION_LABELS, signalCount, TIER_NAMES } from '../../lib/language'
 import { Modal } from '../common'
 import { studentName } from './StudentList'
 
@@ -57,11 +58,21 @@ export function StudentDetail({
       </div>
 
       <div className="detail-tier">
-        <span className={`tier tier-${e.tier}`}>Tier {e.tier}</span>
+        <span className={`tier tier-${e.tier}`}>{TIER_NAMES[e.tier]}</span>
         <span className="small muted">
-          {e.flags.length} {e.flags.length === 1 ? 'flag' : 'flags'} in {latest.label}. {rules.tiers}
+          {signalCount(e.flags.length)} in {latest.label} (Tier {e.tier}).
         </span>
       </div>
+      {(student.movement && student.movement.direction !== 'steady') || student.near.length > 0 ? (
+        <div className="detail-direction">
+          <span className={`tag dir dir-${student.movement?.direction ?? 'near'}`}>
+            {student.movement && student.movement.direction !== 'steady' ? DIRECTION_LABELS[student.movement.direction] : 'Close to a line'}
+          </span>
+          <span className="small muted">
+            {(student.movement && student.movement.direction !== 'steady' ? student.movement.reasons : student.near).join('. ')}.
+          </span>
+        </div>
+      ) : null}
 
       <ul className="detail-areas">
         {RULE_CATEGORIES.map((c) => {
@@ -78,7 +89,7 @@ export function StudentDetail({
             <li key={c} className={flag ? 'flagged' : undefined}>
               <h3>
                 {RULE_LABELS[c]}
-                <span className={`tag${flag ? ' look' : ''}`}>{flag ? 'Flagged' : 'No flag'}</span>
+                <span className={`tag${flag ? ' look' : ''}`}>{flag ? 'Signal' : 'No signal'}</span>
               </h3>
               <p className="detail-value num">{valueText(e, c)}</p>
               <p className="small muted">{flag ? flag.reason : rules[c]}</p>
@@ -113,10 +124,10 @@ export function StudentDetail({
               </thead>
               <tbody>
                 <tr>
-                  <th scope="row">Tier</th>
+                  <th scope="row">Signals</th>
                   {student.history.map((h, i) => (
                     <td key={i} className="r">
-                      {cell(h, (x) => String(x.tier))}
+                      {cell(h, (x) => String(x.flags.length))}
                     </td>
                   ))}
                 </tr>
@@ -148,7 +159,7 @@ export function StudentDetail({
             </table>
           </div>
           <p className="small muted">
-            A dash means the snapshot had no value. Tiers count only the data each snapshot included.
+            A dash means the snapshot had no value. Signals count only the data each snapshot included.
           </p>
         </div>
       )}

@@ -5,13 +5,14 @@ import type { Thresholds } from '../../config/rules'
 import type { Snapshot } from '../model'
 import { availableRules, evaluate, RULE_CATEGORIES, tierFor, type Evaluation, type RuleCategory, type Tier } from '../rules/engine'
 import type { Category } from '../sis/types'
+import { movement, nearLine, type Movement } from './movement'
 
 export type ChangeStatus = 'up' | 'down' | 'same' | 'new'
 
 export const CHANGE_LABELS: Record<ChangeStatus, string> = {
-  up: 'Moved up a tier',
-  down: 'Moved down a tier',
-  same: 'Same tier',
+  up: 'More signals than last time',
+  down: 'Fewer signals than last time',
+  same: 'Same support level',
   new: 'New in this snapshot',
 }
 
@@ -24,6 +25,10 @@ export interface StudentResult {
   change: ChangeStatus | null
   /** Tiers counting only categories present in both snapshots, for comparison. */
   comparableTiers: { previous: Tier; latest: Tier } | null
+  /** Direction since the previous snapshot, when the student is in both. */
+  movement: Movement | null
+  /** Why a student with no signals is close to a line. Empty when not. */
+  near: string[]
 }
 
 export interface SnapshotSummary {
@@ -118,7 +123,8 @@ export function analyze(snapshots: Snapshot[], t: Thresholds): Results {
         change = d > 0 ? 'up' : d < 0 ? 'down' : 'same'
       }
     }
-    return { key, latest: e, history, previous, change, comparableTiers }
+    const move = previous ? movement(e, previous, comparable, { from: labels[last - 1], to: labels[last] }, t) : null
+    return { key, latest: e, history, previous, change, comparableTiers, movement: move, near: nearLine(e, t) }
   })
 
   const grades = new Map<string, GradeSummary>()
