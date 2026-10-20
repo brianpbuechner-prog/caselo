@@ -1,6 +1,8 @@
-// One horizontal bar split by tier, with a legend that doubles as the tier
-// filter. Tier 3 sits first because it is where a counselor looks first.
+// One horizontal bar split by support level, with a legend that doubles as
+// the filter. "Needs support now" sits first because it is where a counselor
+// looks first.
 
+import { TIER_NAMES } from '../../lib/language'
 import type { Tier } from '../../lib/rules/engine'
 
 export type TierFilter = 'all' | '1' | '2' | '3'
@@ -28,7 +30,7 @@ export function TierBar({
               key={t}
               className={`seg seg-${t}${selected && selected !== 'all' && selected !== String(t) ? ' dim' : ''}`}
               style={{ flexGrow: tiers[t] }}
-              title={`Tier ${t}: ${tiers[t]} students`}
+              title={`${TIER_NAMES[t]} (Tier ${t}): ${tiers[t]} students`}
               onClick={() => pick(t)}
             />
           ) : null,
@@ -40,7 +42,7 @@ export function TierBar({
           const content = (
             <>
               <span className={`swatch seg-${t}`} aria-hidden="true" />
-              <span>Tier {t}</span>
+              <span>{TIER_NAMES[t]}</span>
               <b className="num">{tiers[t]}</b>
               <span className="muted num">{total ? Math.round((tiers[t] / total) * 100) : 0}%</span>
             </>

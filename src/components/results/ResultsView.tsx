@@ -6,7 +6,7 @@
 // Download PDF and reads only the de-identified summary.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { Thresholds } from '../../config/rules'
+import { ruleDescriptions, type Thresholds } from '../../config/rules'
 import type { DraftState } from '../../lib/ai/types'
 import { analyze } from '../../lib/compare/analyze'
 import type { Snapshot } from '../../lib/model'
@@ -16,6 +16,7 @@ import { AiDraftPanel, DraftPrint } from './AiDraft'
 import { Brief } from './Brief'
 import { Patterns } from './Patterns'
 import { StudentDetail } from './StudentDetail'
+import { Slipping } from './Slipping'
 import { SummaryReport } from './SummaryReport'
 import { DEFAULT_FILTER, StudentList, type ListFilter } from './StudentList'
 import { MissingLine, Summary } from './Summary'
@@ -129,7 +130,7 @@ export function ResultsView({
           </div>
         </div>
       </header>
-      <SummaryReport results={results} summary={summary} draft={printDraft} />
+      <SummaryReport results={results} summary={summary} draft={printDraft} tierText={ruleDescriptions(thresholds).tiers} />
       <main className="page results-page">
         <div className="pdf-bar no-print">
           <button className="btn ghost sm ai-toggle" aria-expanded={aiOpen} onClick={() => setAiOpen((v) => !v)}>
@@ -162,6 +163,7 @@ export function ResultsView({
           <Summary results={results} filter={filter} onShowStudents={showStudents} />
           <Brief role={getRole(role)} results={results} onOpenStudent={setOpenKey} onShowStudents={showStudents} />
         </div>
+        <Slipping results={results} role={getRole(role)} onOpenStudent={setOpenKey} onShowStudents={showStudents} />
         <Patterns results={results} thresholds={thresholds} onShowStudents={showStudents} />
         <div ref={listRef} className="roster">
           <h2 className="h2">All students</h2>

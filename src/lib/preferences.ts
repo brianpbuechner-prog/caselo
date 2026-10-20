@@ -47,6 +47,11 @@ export function sanitize(raw: unknown): Preferences {
       absenceCodes: strings(t.absenceCodes, d.absenceCodes),
       tier2MinFlags: num(t.tier2MinFlags, d.tier2MinFlags),
       tier3MinFlags: num(t.tier3MinFlags, d.tier3MinFlags),
+      moveAbsencePoints: num(t.moveAbsencePoints, d.moveAbsencePoints),
+      moveGpa: num(t.moveGpa, d.moveGpa),
+      moveMinDays: num(t.moveMinDays, d.moveMinDays),
+      nearAbsencePoints: num(t.nearAbsencePoints, d.nearAbsencePoints),
+      nearGpa: num(t.nearGpa, d.nearGpa),
     },
     layout: { density: layout.density === 'compact' ? 'compact' : 'comfortable' },
   }

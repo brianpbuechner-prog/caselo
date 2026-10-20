@@ -135,10 +135,20 @@ export function ThresholdPanel({
       </fieldset>
 
       <fieldset>
-        <legend>Tiers</legend>
-        <p className="rule-text">{rules.tiers} A student gets at most one flag per category.</p>
-        <NumberSetting label="Tier 2 at" value={t.tier2MinFlags} step={1} min={1} max={3} suffix="flags or more" onChange={(n) => set({ tier2MinFlags: n, tier3MinFlags: Math.max(n, t.tier3MinFlags) })} />
-        <NumberSetting label="Tier 3 at" value={t.tier3MinFlags} step={1} min={1} max={3} suffix="flags or more" onChange={(n) => set({ tier3MinFlags: n, tier2MinFlags: Math.min(n, t.tier2MinFlags) })} />
+        <legend>Support levels</legend>
+        <p className="rule-text">{rules.tiers} A student gets at most one signal per area. Tier numbers are the MTSS equivalents, and the CSV export includes them.</p>
+        <NumberSetting label="Worth a check-in at" value={t.tier2MinFlags} step={1} min={1} max={3} suffix="signals or more" onChange={(n) => set({ tier2MinFlags: n, tier3MinFlags: Math.max(n, t.tier3MinFlags) })} />
+        <NumberSetting label="Needs support now at" value={t.tier3MinFlags} step={1} min={1} max={3} suffix="signals or more" onChange={(n) => set({ tier3MinFlags: n, tier2MinFlags: Math.min(n, t.tier2MinFlags) })} />
+      </fieldset>
+
+      <fieldset>
+        <legend>Direction</legend>
+        <p className="rule-text">{rules.movement}</p>
+        <NumberSetting label="Absence change" value={t.moveAbsencePoints} step={0.5} min={0.5} max={20} suffix="points or more" onChange={(n) => set({ moveAbsencePoints: n })} />
+        <NumberSetting label="GPA change" value={t.moveGpa} step={0.05} min={0.05} max={2} suffix="or more" onChange={(n) => set({ moveGpa: n })} />
+        <NumberSetting label="Count attendance after" value={t.moveMinDays} step={1} min={0} max={180} suffix="school days" onChange={(n) => set({ moveMinDays: n })} />
+        <NumberSetting label="Close to attendance line" value={t.nearAbsencePoints} step={0.5} min={0} max={10} suffix="points" onChange={(n) => set({ nearAbsencePoints: n })} />
+        <NumberSetting label="Close to GPA line" value={t.nearGpa} step={0.05} min={0} max={1} onChange={(n) => set({ nearGpa: n })} />
       </fieldset>
 
       <fieldset>

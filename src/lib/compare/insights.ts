@@ -5,6 +5,7 @@
 
 import type { Thresholds } from '../../config/rules'
 import { RULE_CATEGORIES, RULE_LABELS, type RuleCategory } from '../rules/engine'
+import type { Direction } from '../language'
 import type { Results, StudentResult } from './analyze'
 
 const has = (s: StudentResult, c: RuleCategory) => s.latest.flags.some((f) => f.category === c)
@@ -181,6 +182,27 @@ export function startHere(results: Results, limit = 5): StudentResult[] {
     .slice(0, limit)
 }
 
-export const START_HERE_ORDER = 'Ordered by tier, then a tier that rose since the last snapshot, then number of flags, then absence.'
+export const START_HERE_ORDER = 'Ordered by support level, then more signals than last time, then number of signals, then absence.'
 
-export const areaPhrase = (c: RuleCategory) => (c === 'attendance' ? 'chronically absent' : `flagged for ${RULE_LABELS[c].toLowerCase()}`)
+export const areaPhrase = (c: RuleCategory) =>
+  c === 'attendance' ? 'chronically absent' : `with ${c === 'academics' ? 'an' : 'a'} ${RULE_LABELS[c].toLowerCase()} signal`
+
+const byConcern = (a: StudentResult, b: StudentResult) =>
+  (b.movement?.reasons.length ?? b.near.length) - (a.movement?.reasons.length ?? a.near.length) ||
+  (b.latest.absencePct ?? -1) - (a.latest.absencePct ?? -1) ||
+  (a.latest.gpa ?? 99) - (b.latest.gpa ?? 99) ||
+  a.key.localeCompare(b.key)
+
+/** Students with no signals whose numbers are moving toward a line. */
+export function slippingQuietly(results: Results): StudentResult[] {
+  return results.students.filter((s) => s.latest.flags.length === 0 && s.movement?.direction === 'slipping').sort(byConcern)
+}
+
+/** Students with no signals who are close to a line. For a single snapshot. */
+export function closeToLine(results: Results): StudentResult[] {
+  return results.students.filter((s) => s.near.length > 0).sort(byConcern)
+}
+
+export function withDirection(results: Results, d: Direction): StudentResult[] {
+  return results.students.filter((s) => s.movement?.direction === d)
+}
