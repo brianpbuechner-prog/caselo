@@ -234,7 +234,7 @@ tbody tr:hover td { background: #fafbfb; }
 
 /* Summary and brief, side by side */
 .top { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 48px; padding: 36px 0 8px; align-items: start; }
-.headline { font-size: clamp(30px, 3.6vw, 44px); line-height: 1.08; font-weight: 640; letter-spacing: -0.035em; max-width: 16ch; text-wrap: balance; }
+.headline { font-size: clamp(28px, 3.2vw, 40px); line-height: 1.1; font-weight: 640; letter-spacing: -0.03em; max-width: 22ch; text-wrap: balance; margin-bottom: 22px; }
 .headline-sub { color: var(--muted); font-size: 16px; margin: 10px 0 22px; }
 
 .tierbar { display: grid; gap: 10px; }
