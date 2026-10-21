@@ -58,7 +58,7 @@ function prioritySort(a: StudentResult, b: StudentResult): number {
   )
 }
 
-const DIRECTION_RANK: Record<string, number> = { slipping: 0, new: 1, finding: 2, growing: 3, steady: 4 }
+const DIRECTION_RANK: Record<string, number> = { slipping: 0, new: 1, finding: 2, gaining: 3, steady: 4 }
 const directionKey = (s: StudentResult) => (s.change === 'new' ? 'new' : (s.movement?.direction ?? 'steady'))
 
 export function StudentList({
@@ -183,7 +183,7 @@ export function StudentList({
               <option value="dir-quiet">{DIRECTION_FILTER_LABELS.quiet}</option>
               <option value="dir-slipping">Slipping</option>
               <option value="dir-finding">Finding footing</option>
-              <option value="dir-growing">Growing</option>
+              <option value="dir-gaining">Gaining ground</option>
               <option value="dir-steady">Steady</option>
               <option value="new">New in {latest.label}</option>
               {results.transitions?.comparable.map((c) => (

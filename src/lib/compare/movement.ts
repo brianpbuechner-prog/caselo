@@ -4,7 +4,7 @@
 //   Finding footing  fewer signals than last time
 //   Slipping         a new signal, or absence, GPA, or behavior moved
 //                    toward a line by a set amount
-//   Growing          moved away from a line, nothing moved toward one
+//   Gaining ground   moved away from a line, nothing moved toward one
 //   Steady           everything else
 
 import type { Thresholds } from '../../config/rules'
@@ -64,7 +64,7 @@ export function movement(
 
   if (lost.length > gained.length) return { direction: 'finding', reasons: [...cleared, ...better] }
   if (gained.length || worse.length) return { direction: 'slipping', reasons: [...newSignals, ...worse] }
-  if (better.length) return { direction: 'growing', reasons: better }
+  if (better.length) return { direction: 'gaining', reasons: better }
   return { direction: 'steady', reasons: [] }
 }
 

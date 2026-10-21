@@ -45,7 +45,7 @@ export function Summary({
               <span className="since-area">Direction</span>
               <span className="since-pair">
                 <Move n={withDirection(results, 'finding').length} text="finding footing" onClick={() => onShowStudents({ direction: 'finding' })} />
-                <Move n={withDirection(results, 'growing').length} text="growing" onClick={() => onShowStudents({ direction: 'growing' })} />
+                <Move n={withDirection(results, 'gaining').length} text="gaining ground" onClick={() => onShowStudents({ direction: 'gaining' })} />
               </span>
               <Move n={withDirection(results, 'slipping').length} text="slipping" look onClick={() => onShowStudents({ direction: 'slipping' })} />
             </li>
