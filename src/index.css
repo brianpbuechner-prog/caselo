@@ -548,6 +548,6 @@ tr.calm .student-name { color: var(--text); font-weight: 400; }
 .brief-row.plain .brief-values { grid-column: 1; }
 .dir { white-space: nowrap; }
 .dir-slipping { color: var(--accent-strong); font-weight: 600; }
-.dir-finding, .dir-growing { color: var(--text); }
+.dir-finding, .dir-gaining { color: var(--text); }
 .detail-direction { display: flex; gap: 10px; align-items: baseline; margin-top: 8px; }
 .detail-direction .tag { flex: none; }

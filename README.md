@@ -23,7 +23,7 @@ Direction, between two snapshots:
 - **Slipping:** a new signal, or absence up 3 or more points, GPA down 0.3
   or more, or more behavior incidents.
 - **Finding footing:** fewer signals than last time.
-- **Growing:** moved away from a line, with nothing moving toward one.
+- **Gaining ground:** moved away from a line, with nothing moving toward one.
 - **Steady:** everything else.
 
 Attendance changes count only once both snapshots cover 20 or more school

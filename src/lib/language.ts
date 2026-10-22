@@ -6,7 +6,7 @@
 //   Tier 1  No signals
 //   flag    signal
 //
-// Direction, from one snapshot to the next: Growing, Steady, Slipping,
+// Direction, from one snapshot to the next: Gaining ground, Steady, Slipping,
 // Finding footing. Describe the situation, not the student: "attendance is
 // slipping", not "a slipping student".
 
@@ -28,10 +28,10 @@ export const TIER_SHORT: Record<Tier, string> = {
 /** "Needs support now (Tier 3)", for places MTSS teams will read. */
 export const tierWithEquivalent = (t: Tier) => `${TIER_NAMES[t]} (Tier ${t})`
 
-export type Direction = 'growing' | 'steady' | 'slipping' | 'finding'
+export type Direction = 'gaining' | 'steady' | 'slipping' | 'finding'
 
 export const DIRECTION_LABELS: Record<Direction, string> = {
-  growing: 'Growing',
+  gaining: 'Gaining ground',
   steady: 'Steady',
   slipping: 'Slipping',
   finding: 'Finding footing',

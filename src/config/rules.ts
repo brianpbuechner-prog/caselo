@@ -29,9 +29,9 @@ export interface Thresholds {
   tier2MinFlags: number
   /** "Needs support now" (Tier 3) starts at this many signals. */
   tier3MinFlags: number
-  /** Slipping or growing: absence moved by this many percentage points between snapshots. */
+  /** Slipping or gaining ground: absence moved by this many percentage points between snapshots. */
   moveAbsencePoints: number
-  /** Slipping or growing: GPA moved by this much between snapshots. */
+  /** Slipping or gaining ground: GPA moved by this much between snapshots. */
   moveGpa: number
   /**
    * Attendance changes count only when both snapshots cover at least this
@@ -69,6 +69,6 @@ export function ruleDescriptions(t: Thresholds): Record<'attendance' | 'academic
     academics: `Academics: ${t.gpaSource === 'unweighted' ? 'unweighted' : 'cumulative'} GPA below ${t.gpaBelow.toFixed(2)}, or ${t.failingGradesAtLeast} or more failing course ${t.failingGradesAtLeast === 1 ? 'grade' : 'grades'} when course grades are in the file.`,
     behavior: `Behavior: ${t.behaviorIncidentsAtLeast} or more incidents.`,
     tiers: `Needs support now: ${t.tier3MinFlags} or more signals (Tier 3). Worth a check-in: ${t.tier2MinFlags} or more signals (Tier 2). Everyone else is Tier 1.`,
-    movement: `Slipping or growing: absence moved ${t.moveAbsencePoints} or more points, GPA moved ${t.moveGpa.toFixed(2)} or more, or behavior incidents changed, since the last snapshot. Attendance changes count once both snapshots cover ${t.moveMinDays} or more school days. Finding footing: fewer signals than last time. Close to a line: within ${t.nearAbsencePoints} points of the attendance line, within ${t.nearGpa.toFixed(2)} of the GPA line, or one incident short of the behavior line.`,
+    movement: `Slipping or gaining ground: absence moved ${t.moveAbsencePoints} or more points, GPA moved ${t.moveGpa.toFixed(2)} or more, or behavior incidents changed, since the last snapshot. Attendance changes count once both snapshots cover ${t.moveMinDays} or more school days. Finding footing: fewer signals than last time. Close to a line: within ${t.nearAbsencePoints} points of the attendance line, within ${t.nearGpa.toFixed(2)} of the GPA line, or one incident short of the behavior line.`,
   }
 }

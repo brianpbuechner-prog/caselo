@@ -113,7 +113,7 @@ export function About({ onClose }: { onClose: () => void }) {
       <p>
         <strong>The words it uses.</strong> In place of tiers and flags: <em>Needs support now</em> (Tier 3),{' '}
         <em>Worth a check-in</em> (Tier 2), and <em>No signals</em> (Tier 1). A signal is one area (attendance,
-        academics, or behavior) past a line. With two snapshots, each student's direction is <em>Growing</em>,{' '}
+        academics, or behavior) past a line. With two snapshots, each student's direction is <em>Gaining ground</em>,{' '}
         <em>Steady</em>, <em>Slipping</em>, or <em>Finding footing</em>. The words describe the situation, not the
         student, and tier numbers stay available for MTSS teams in Rules and the CSV export.
       </p>

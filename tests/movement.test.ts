@@ -38,9 +38,9 @@ describe('movement', () => {
     expect(move({ absencePct: 4, unweightedGPA: 3 }, { absencePct: 5.5, unweightedGPA: 2.85 }).direction).toBe('steady')
   })
 
-  test('improving with nothing worse is growing', () => {
+  test('improving with nothing worse is gaining ground', () => {
     const m = move({ absencePct: 8, unweightedGPA: 2.4 }, { absencePct: 3, unweightedGPA: 2.9 })
-    expect(m.direction).toBe('growing')
+    expect(m.direction).toBe('gaining')
     expect(m.reasons).toHaveLength(2)
   })
 
